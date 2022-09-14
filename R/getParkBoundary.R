@@ -7,6 +7,8 @@
 #' @param save Whether to save (TRUE) the resulting shapefile or not (FALSE)
 #' @param path If `save == TRUE`, the file path to save the shapefile. Must end with "/"
 #' 
+#' @return A spatial sf object for each specified park boundary
+#' 
 #' @seealso [pullDataStore()]
 getParkBoundary <- function(park, save = FALSE, path = NULL){
   
