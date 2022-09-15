@@ -7,26 +7,26 @@
 #' @param data_path The file path to the eWRIMS geodatabase
 #' 
 #' @return An sf object of points of diversion within given spatial boundary and attributes
-getPOD <- function(x, dist, data_path){
+geteWRIMS <- function(x, dist, data_path){
   
   #ca_pod <- arcpullr::get_spatial_layer("https://gispublic.waterboards.ca.gov/arcgis/rest/services/Water_Rights/Points_of_Diversion/FeatureServer/0")
   
   # add buffer around park boundary
-  aoi <- st_buffer(x, dist = dist)
+  aoi <- sf::st_buffer(x, dist = dist)
   
   #read in spatial points of diversion
-  ca_wr <- st_read(data_path) %>%
-    st_transform(crs=4269)
+  ca_wr <- sf::st_read(data_path) %>%
+    sf::st_transform(crs=4269)
   
   #read in POD attribute table
-  table <- st_read(data_path, layer = "POD_Attributes")
+  table <- sf::st_read(data_path, layer = "POD_Attributes")
   
   #join sf object and table attributes and filter to park boundary region of interest
   nearby_wr <- ca_wr %>%
-    select(POD_ID,LATITUDE,LONGITUDE,DIVERSION_SITE_NAME,SOURCE_NAME) %>%
-    inner_join(., table, by=c("POD_ID"="CORE_POD_ID")) %>%
-    st_intersection(., aoi) %>%
-    mutate(RELATIONSHIP=ifelse(grepl("National Park", LAST_NAME, ignore.case=T), "PARK","NONPARK"))
+    dplyr::select(POD_ID,LATITUDE,LONGITUDE,DIVERSION_SITE_NAME,SOURCE_NAME) %>%
+    dplyr::inner_join(., table, by=c("POD_ID"="CORE_POD_ID")) %>%
+    sf::st_intersection(., aoi) %>%
+    dplyr::mutate(RELATIONSHIP=ifelse(grepl("National Park", LAST_NAME, ignore.case=T), "PARK","NONPARK"))
   
   return(nearby_wr)
   
