@@ -35,6 +35,3 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   return(poi)
   
 }
-  
-  
-  
