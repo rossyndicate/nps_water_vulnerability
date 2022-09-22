@@ -2,17 +2,17 @@
 #' 
 #' This function imports an inventory of available flow data from the USGS National Water Information System (https://waterdata.usgs.gov/nwis)
 #' 
-#' @param park The 4-digit unit code(s) for national parks of interest. Must be in ALL CAPS.
+#' @param aoi An sf polygon object, often a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units used by `getParkBoundary()`) to buffer around park boundary
 #' @param save Whether to save the resulting file (TRUE/FALSE)
 #' @param path If `save == TRUE`, the file path to save to, including name of csv
 #' @return An sf object of USGS gaging stations within given spatial boundary and attributes
-pullFlowUSGS <- function(park, dist,  save = FALSE, path = NULL){
+pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
   
   sf::sf_use_s2(FALSE)
   
   # add buffer around park boundary
-  aoi <- getParkBoundary(park) %>% 
+  aoi <- aoi %>% 
     sf::st_buffer(., dist = dist)
   
   gage_sites <- vector("list", length = length(aoi))

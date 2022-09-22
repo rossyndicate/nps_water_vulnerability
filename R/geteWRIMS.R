@@ -2,12 +2,12 @@
 #' 
 #' This function imports geospatial data from the eWRIMS database (https://waterrightsmaps.waterboards.ca.gov/viewer/index.html?viewer=eWRIMS.eWRIMS_gvh#)
 #' 
-#' @param park The 4-digit unit code(s) for national parks of interest. Must be in ALL CAPS.
+#' @param aoi An sf polygon object, often a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units used in  `park`) to buffer around spatial object `park`
 #' @param data_path The file path to the eWRIMS geodatabase
 #' 
 #' @return An sf object of points of diversion within given spatial boundary and attributes
-geteWRIMS <- function(park, dist, data_path="data/all/eWRIMS_Data.gdb"){
+geteWRIMS <- function(aoi, dist, data_path="data/all/eWRIMS_Data.gdb"){
   
   #ca_pod <- arcpullr::get_spatial_layer("https://gispublic.waterboards.ca.gov/arcgis/rest/services/Water_Rights/Points_of_Diversion/FeatureServer/0")
   
@@ -26,10 +26,10 @@ geteWRIMS <- function(park, dist, data_path="data/all/eWRIMS_Data.gdb"){
   # dropper <- remDr$findElement(using='xpath',value='/html/body/div[2]/div/div[2]/div/div[2]/div/main/div[1]/aside/div/button[6]')
   # dropper$clickElement()
   
-  # add buffer around park boundary
-  park <- getParkBoundary(park)
-  
-  aoi <- park %>%
+  park <- aoi
+
+  # add buffer around park boundary  
+  aoi <- aoi %>%
     sf::st_buffer(dist = dist) 
   
   #read in spatial points of diversion
