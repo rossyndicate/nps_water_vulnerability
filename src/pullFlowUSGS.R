@@ -5,13 +5,13 @@
 #' @param aoi An sf polygon object, often a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units used by `getParkBoundary()`) to buffer around park boundary
 #' @param save Whether to save the resulting file (TRUE/FALSE)
-#' @param path If `save == TRUE`, the file path to save to, including name of csv
+#' @param path If `save == TRUE`, the file path to save to
 #' @return An sf object of USGS gaging stations within given spatial boundary and attributes
 pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
   
   sf::sf_use_s2(FALSE)
   
-  # add buffer around park boundary
+  # add buffer around area of interest
   aoi <- aoi %>% 
     sf::st_buffer(., dist = dist)
   
@@ -43,16 +43,19 @@ pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
     dplyr::left_join(pcodes,by="parm_cd") %>%
     dplyr::select(c(site_no,
                     site_name=station_nm,
+                    data_type_cd,
                     n_obs=count_nu,
                     begin_date,
                     end_date,
                     parameter=parameter_name_description,
                     code=parm_cd)) %>%
     sf::st_intersection(.,dplyr::select(aoi, UNIT_CODE)) %>%
-    dplyr::filter(grepl("discharge|flow|height|level|width",parameter,ignore.case=T))
+    # flow-related data only for now
+    dplyr::filter(grepl("discharge|flow|height|level|width",parameter,ignore.case=T)) %>%
+    dplyr::filter(!grepl("sediment",parameter,ignore.case=T))
 
   if(save == TRUE){
-    readr::write_csv(nwis_list, paste0(path,'.csv'))
+    readr::write_csv(nwis_list, paste0(path,'nwis_flow_inventory.csv'))
     
   }
   
