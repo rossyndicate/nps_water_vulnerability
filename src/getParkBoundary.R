@@ -5,7 +5,7 @@
 #' 
 #' @param park The 4 digit national park code(s) for parks of interest
 #' @param save Whether to save (TRUE) the resulting shapefile or not (FALSE)
-#' @param path If `save == TRUE`, the file path to save the shapefile. Must end with "/"
+#' @param path If `save = TRUE`, the file path to save the shapefile
 #' 
 #' @return A spatial sf object for each specified park boundary
 #' 
@@ -17,7 +17,7 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   #pull resource ID using reference ID of the park boundaries landing page
   resID <- httr::GET(paste0(call, "/Reference/2225713/DigitalFiles")) %>% 
     httr::content("text", encoding = "UTF-8") %>% 
-    jsonlite::fromJSON( flatten = TRUE) %>% 
+    jsonlite::fromJSON(.,flatten = TRUE) %>% 
     dplyr::as_tibble() %>% 
     filter(str_detect(fileName, "nps_boundary")) %>% 
     pull(resourceId) %>% 
@@ -29,15 +29,17 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   temp2 <- tempfile()
   unzip(temp1, exdir = temp2)
   
+  sf::sf_use_s2(FALSE)
   
   parks <- sf::st_read(dsn = temp2)
   
   poi <- parks %>% 
-    dplyr::filter(UNIT_CODE %in% park)
+    dplyr::filter(UNIT_CODE %in% park) %>%
+    dplyr::group_by(UNIT_CODE,REGION,STATE) %>%
+    dplyr::summarize()
     
-  
   if(save == TRUE){
-    sf::st_write(poi, paste0(path, "park_boundary.shp"))
+    sf::st_write(poi, paste0(path, "/park_boundary.shp"))
     
   }
   
