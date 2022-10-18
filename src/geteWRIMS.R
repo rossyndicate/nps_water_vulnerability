@@ -4,50 +4,71 @@
 #' 
 #' @param aoi An sf polygon object, often a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units used in  `park`) to buffer around spatial object `park`
-#' @param data_path The file path to the eWRIMS geodatabase
 #' 
 #' @return An sf object of points of diversion within given spatial boundary and attributes
-geteWRIMS <- function(aoi, dist, data_path="data/all/eWRIMS_Data.gdb"){
+geteWRIMS <- function(aoi, dist){
   
-  #ca_pod <- arcpullr::get_spatial_layer("https://gispublic.waterboards.ca.gov/arcgis/rest/services/Water_Rights/Points_of_Diversion/FeatureServer/0")
+  # create a temporary directory for all raw datafiles to be sent to
+  dir.create(file.path(getwd(),"/temp_ewrims/"), showWarnings = FALSE)
   
-  # #RSelenium .... I CANNOT GET FILES TO DOWNLOAD IN ANY OTHER FOLDER EXVCEPT DOWLOADS AND I DONT KNOW WHY
-  # url <- "https://gispublic.waterboards.ca.gov/portal/home/item.html?id=746870b4aa1f47579ca1bf5d6c9924a8"
-  # 
-  # file_path <- getwd() %>% str_replace_all("/", "\\\\\\\\")
-  # 
-  # dl <- RSelenium::makeFirefoxProfile(list("directory_upgrade" = TRUE,
-  #                                          "download.default_directory" = paste0(file_path, "\\\\data\\\\all")))
-  # 
-  # remDr <- RSelenium::remoteDriver(port=669L,browser = c("firefox"), extraCapabilities = dl)
-  # remDr$open()
-  # remDr$navigate(url)
-  # 
-  # dropper <- remDr$findElement(using='xpath',value='/html/body/div[2]/div/div[2]/div/div[2]/div/main/div[1]/aside/div/button[6]')
-  # dropper$clickElement()
+  downloadPath <- file.path(getwd(),"/temp_ewrims/") %>% stringr::str_replace_all("/", "\\\\\\\\")
   
-  park <- aoi
-
+  # make sure server downloads data into appropriate folder (i.e., our temporary folder)
+  fprof <- RSelenium::makeFirefoxProfile(list(browser.download.dir = downloadPath,
+                                              browser.download.folderList = 2L,
+                                              browser.download.manager.showWhenStarting = FALSE,
+                                              browser.helperApps.neverAsk.openFile = "text/csv",
+                                              browser.helperApps.neverAsk.saveToDisk = "text/csv"))
+  
+  exCap <- list(firefox_profile = fprof$firefox_profile, 
+                "moz:firefoxOptions" = list(args = list('--headless')))
+  
+  # start up RSelenium session:
+  rD <- RSelenium::rsDriver(browser = "firefox", port = sample.int(1000, 1), extraCapabilities = exCap)
+  remDr <- rD$client
+  
+  # get list of all Aquarius sites from the portal
+  remDr$navigate('https://gispublic.waterboards.ca.gov/portal/home/item.html?id=746870b4aa1f47579ca1bf5d6c9924a8')
+  Sys.sleep(5) # provide time for site navigation
+  remDr$screenshot(display = TRUE)
+  
+  dropper <- remDr$findElement(using = 'xpath', value = '/html/body/div[3]/div/div[2]/div/div[2]/div/main/div[1]/aside/div/button[6]')
+  Sys.sleep(3) # provide time for navigation and selection
+  dropper$clickElement()
+  Sys.sleep(15)
+  
+  temp <- list.files(path = paste0(getwd(),"/temp_ewrims/"), pattern = "*.zip", full.names = T)
+  
+  # unzip all your downloaded data files (one for every site)
+  unzip(temp,exdir=paste0(getwd(),"/temp_ewrims/eWRIMS.gdb"))
+  
   # add buffer around park boundary  
-  aoi <- aoi %>%
+  aoi_buffer <- aoi %>%
     sf::st_buffer(dist = dist) 
   
   #read in spatial points of diversion
-  ca_wr <- sf::st_read(data_path) %>%
+  ca_wr <- sf::st_read(paste0(getwd(),"/temp_ewrims/eWRIMS.gdb")) %>%
     sf::st_transform(crs=4269)
   
   #read in POD attribute table
-  table <- sf::st_read(data_path, layer = "POD_Attributes")
+  table <- sf::st_read(paste0(getwd(),"/temp_ewrims/eWRIMS.gdb"), layer = "POD_Attributes")
   
   #join sf object and table attributes and filter to park boundary region of interest
   nearby_wr <- ca_wr %>%
     dplyr::select(POD_ID,LATITUDE,LONGITUDE,DIVERSION_SITE_NAME,SOURCE_NAME) %>%
     dplyr::inner_join(., table, by=c("POD_ID"="CORE_POD_ID")) %>%
-    sf::st_intersection(., dplyr::select(aoi,UNIT_CODE)) %>%
-    sf::st_join(.,dplyr::select(park,UNIT_CODE),left=TRUE) %>%
-    dplyr::mutate(RELATIONSHIP=ifelse(grepl("National Park", LAST_NAME, ignore.case=T), "PARK","NONPARK"),
-                  WITHIN_PARK_BOUNDARY=ifelse(UNIT_CODE.x==UNIT_CODE.y,"WITHIN","OUTSIDE"))
+    sf::st_intersection(., dplyr::select(aoi_buffer,UNIT_CODE)) %>%
+    sf::st_join(.,dplyr::select(aoi,within=UNIT_CODE),left=TRUE) %>%
+    dplyr::mutate(park_right=ifelse(grepl("National Park", LAST_NAME, ignore.case=T), "Park","Non-park"),
+                  within_park=ifelse(UNIT_CODE==within,"Within","Outside")) %>%
+    select(-within)
   
+  # end the RSelenium server session
+  remDr$close()
+  rD[["server"]]$stop()
+  
+  # delete the temporary folder
+  unlink(file.path(getwd(), "/temp_ewrims/"), recursive = T)
   return(nearby_wr)
   
 }
