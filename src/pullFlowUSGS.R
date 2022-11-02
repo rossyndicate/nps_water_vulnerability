@@ -43,7 +43,7 @@ pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
     dplyr::left_join(pcodes,by="parm_cd") %>%
     sf::st_intersection(., dplyr::select(aoi_buffer, UNIT_CODE)) %>%
     sf::st_join(., dplyr::select(aoi, UNIT_CODE), left=T) %>%
-    dplyr::mutate(within_park=ifelse(UNIT_CODE.x==UNIT_CODE.y,"Within","Outside")) %>%
+    dplyr::mutate(within_park=ifelse(is.na(UNIT_CODE.y), "Outside","Within")) %>%
     dplyr::select(c(site_no,
                       site_name=station_nm,
                       data_type_cd,
@@ -59,6 +59,21 @@ pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
     dplyr::filter(grepl("discharge|flow|height|level|width",parameter,ignore.case=T)) %>%
     dplyr::filter(!grepl("sediment",parameter,ignore.case=T))
   
+  site_url <- 'https://maps.waterdata.usgs.gov/mapper/help/sitetype.html'
+  
+  table <- rvest::read_html(site_url) %>%
+    rvest::html_nodes('table') %>%
+    rvest::html_table() #%>%
+  
+  table <- rbind(table[[1]],table[[2]],table[[3]]) %>%
+    select(site_type_cd = 1,
+           site_type = 2)
+  
+  inventory <- left_join(inventory,table,by='site_type_cd') %>%
+    mutate(data_type=case_when(data_type_cd=="dv" ~ "Daily",
+                               data_type_cd=="uv" ~ "Instantaneous",
+                               data_type_cd=="qw" ~ "Water Quality",
+                               data_type_cd=="gw" ~ "Groundwater Levels"))
 
   if(save == TRUE)
     {write_csv(inventory, paste0(path,'/nwis_flow_inventory.csv'))}
