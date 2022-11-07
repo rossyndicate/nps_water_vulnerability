@@ -54,10 +54,10 @@ pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
                       parameter=parameter_name_description,
                       code=parm_cd,
                       within_park,
-                      UNIT_CODE=UNIT_CODE.x)) %>%
+                      UNIT_CODE=UNIT_CODE.x)) #%>%
     # flow-related data only for now
-    dplyr::filter(grepl("discharge|flow|height|level|width",parameter,ignore.case=T)) %>%
-    dplyr::filter(!grepl("sediment",parameter,ignore.case=T))
+    #dplyr::filter(grepl("discharge|flow|height|level|width",parameter,ignore.case=T)) %>%
+    #dplyr::filter(!grepl("sediment",parameter,ignore.case=T))
   
   site_url <- 'https://maps.waterdata.usgs.gov/mapper/help/sitetype.html'
   
@@ -65,15 +65,21 @@ pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
     rvest::html_nodes('table') %>%
     rvest::html_table() #%>%
   
-  table <- rbind(table[[1]],table[[2]],table[[3]]) %>%
+  table <- rbind(table[[1]],table[[2]],table[[3]],table[[4]],table[[5]]) %>%
     select(site_type_cd = 1,
            site_type = 2)
   
   inventory <- left_join(inventory,table,by='site_type_cd') %>%
     mutate(data_type=case_when(data_type_cd=="dv" ~ "Daily",
-                               data_type_cd=="uv" ~ "Instantaneous",
+                               data_type_cd=="uv" ~ "Unit",
                                data_type_cd=="qw" ~ "Water Quality",
-                               data_type_cd=="gw" ~ "Groundwater Levels"))
+                               data_type_cd=="gw" ~ "Groundwater Levels",
+                               data_type_cd=="iv" ~ "Unit",
+                               data_type_cd=="sv" ~ "Site Visits",
+                               data_type_cd=="pk" ~ "Peak Measurements",
+                               data_type_cd=="ad" ~ "USGS Annual Water Data Report",
+                               data_type_cd=="aw" ~ "Active Groundwater Level Network",
+                               data_type_cd=="id" ~ "Historic Instantaneous"))
 
   if(save == TRUE)
     {write_csv(inventory, paste0(path,'/nwis_flow_inventory.csv'))}
