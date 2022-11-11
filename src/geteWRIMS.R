@@ -17,8 +17,8 @@ geteWRIMS <- function(aoi, dist){
   fprof <- RSelenium::makeFirefoxProfile(list(browser.download.dir = downloadPath,
                                               browser.download.folderList = 2L,
                                               browser.download.manager.showWhenStarting = FALSE,
-                                              browser.helperApps.neverAsk.openFile = "text/csv",
-                                              browser.helperApps.neverAsk.saveToDisk = "text/csv"))
+                                              browser.helperApps.neverAsk.openFile = "text/csv/gdb/zip",
+                                              browser.helperApps.neverAsk.saveToDisk = "text/csv/gdb/zip"))
   
   exCap <- list(firefox_profile = fprof$firefox_profile, 
                 "moz:firefoxOptions" = list(args = list('--headless')))
@@ -32,36 +32,36 @@ geteWRIMS <- function(aoi, dist){
   Sys.sleep(5) # provide time for site navigation
   remDr$screenshot(display = TRUE)
   
-  dropper <- remDr$findElement(using = 'xpath', value = '/html/body/div[3]/div/div[2]/div/div[2]/div/main/div[1]/aside/div/button[6]')
+  dropper <- remDr$findElement(using = 'xpath', value = '/html/body/div[2]/div/div[2]/div/div[2]/div/main/div[1]/aside/div/button[6]')
   Sys.sleep(3) # provide time for navigation and selection
   dropper$clickElement()
   Sys.sleep(15)
-  
-  temp <- list.files(path = paste0(getwd(),"/temp_ewrims/"), pattern = "*.zip", full.names = T)
+  # OLD? <- /html/body/div[3]/div/div[2]/div/div[2]/div/main/div[1]/aside/div/button[6]
+  temp <- list.files(path = paste0(getwd(),"/temp_ewrims"), pattern = "*.zip", full.names = T)
   
   # unzip all your downloaded data files (one for every site)
-  unzip(temp,exdir=paste0(getwd(),"/temp_ewrims/eWRIMS.gdb"))
+  try(unzip(temp,exdir=paste0(getwd(),"/temp_ewrims/eWRIMS.gdb")))
   
   # add buffer around park boundary  
   aoi_buffer <- aoi %>%
     sf::st_buffer(dist = dist) 
   
   #read in spatial points of diversion
-  ca_wr <- sf::st_read(paste0(getwd(),"/temp_ewrims/eWRIMS.gdb")) %>%
-    sf::st_transform(crs=4269)
+  try(ca_wr <- sf::st_read(paste0(getwd(),"/temp_ewrims/eWRIMS.gdb")) %>%
+    sf::st_transform(crs=4269))
   
   #read in POD attribute table
-  table <- sf::st_read(paste0(getwd(),"/temp_ewrims/eWRIMS.gdb"), layer = "POD_Attributes")
+  try(table <- sf::st_read(paste0(getwd(),"/temp_ewrims/eWRIMS.gdb"), layer = "POD_Attributes"))
   
   #join sf object and table attributes and filter to park boundary region of interest
   nearby_wr <- ca_wr %>%
     dplyr::select(POD_ID,LATITUDE,LONGITUDE,DIVERSION_SITE_NAME,SOURCE_NAME) %>%
     dplyr::inner_join(., table, by=c("POD_ID"="CORE_POD_ID")) %>%
-    sf::st_intersection(., dplyr::select(aoi_buffer,UNIT_CODE)) %>%
-    sf::st_join(.,dplyr::select(aoi,within=UNIT_CODE),left=TRUE) %>%
-    dplyr::mutate(park_right=ifelse(grepl("National Park", LAST_NAME, ignore.case=T), "Park","Non-park"),
-                  within_park=ifelse(UNIT_CODE==within,"Within","Outside")) %>%
-    select(-within)
+    sf::st_intersection(., dplyr::select(aoi_buffer)) %>%
+    #sf::st_join(.,dplyr::select(aoi,within=UNIT_CODE),left=TRUE) %>%
+    dplyr::mutate(park_right=ifelse(grepl("National Park", LAST_NAME, ignore.case=T), "Park","Non-park"))#,
+                  #within_park=ifelse(UNIT_CODE==within,"Within","Outside")) %>%
+    #select(-within)
   
   # end the RSelenium server session
   remDr$close()
