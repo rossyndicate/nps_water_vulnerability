@@ -7,13 +7,15 @@
 #' @param save Whether to save the resulting file (TRUE/FALSE)
 #' @param path If `save = TRUE`, the file path to save to
 #' @return An sf object of USGS gaging stations within given spatial boundary and attributes
-pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
+pullNWIS <- function(aoi, dist,  save = FALSE, path = NULL){
   
   sf::sf_use_s2(FALSE)
   
   # add buffer around area of interest
   aoi_buffer <- aoi %>% 
     sf::st_buffer(., dist = dist)
+  
+ # aoi <- getParkBoundary("DEVA")
   
   gage_sites <- vector("list", length = nrow(aoi_buffer))
   
@@ -41,9 +43,9 @@ pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
   
   inventory <- gage_sites %>%
     dplyr::left_join(pcodes,by="parm_cd") %>%
-    sf::st_intersection(., dplyr::select(aoi_buffer, UNIT_CODE)) %>%
-    sf::st_join(., dplyr::select(aoi, UNIT_CODE), left=T) %>%
-    dplyr::mutate(within_park=ifelse(is.na(UNIT_CODE.y), "Outside","Within")) %>%
+    sf::st_intersection(.,aoi_buffer) %>%
+    # sf::st_join(., dplyr::select(aoi, UNIT_CODE), left=T) %>%
+    # dplyr::mutate(within_park=ifelse(is.na(UNIT_CODE.y), "Outside","Within")) %>%
     dplyr::select(c(site_no,
                       site_name=station_nm,
                       data_type_cd,
@@ -52,9 +54,9 @@ pullFlowUSGS <- function(aoi, dist,  save = FALSE, path = NULL){
                       begin_date,
                       end_date,
                       parameter=parameter_name_description,
-                      code=parm_cd,
-                      within_park,
-                      UNIT_CODE=UNIT_CODE.x)) #%>%
+                      code=parm_cd))
+                      #within_park,
+                      #UNIT_CODE=UNIT_CODE.x)) #%>%
     # flow-related data only for now
     #dplyr::filter(grepl("discharge|flow|height|level|width",parameter,ignore.case=T)) %>%
     #dplyr::filter(!grepl("sediment",parameter,ignore.case=T))

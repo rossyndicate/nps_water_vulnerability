@@ -64,6 +64,7 @@ downloadAquarius <- function(park, save = FALSE, path = NULL){
     url <- sites %>%
       dplyr::filter(sites == locations)
     
+    
     remDr$navigate(url$sites)
     
     Sys.sleep(5) # provide time for navigation 
