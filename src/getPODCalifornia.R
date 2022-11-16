@@ -1,12 +1,12 @@
 #' Import and clean California Water Rights Spatial Data
-#' 
 #' This function imports geospatial data from the eWRIMS database (https://waterrightsmaps.waterboards.ca.gov/viewer/index.html?viewer=eWRIMS.eWRIMS_gvh#)
+#' Uses Rselenius so java and firefox need to  be installed on your local computer.
 #' 
 #' @param aoi An sf polygon object, often a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units used in  `park`) to buffer around spatial object `park`
 #' 
 #' @return An sf object of points of diversion within given spatial boundary and attributes
-geteWRIMS <- function(aoi, dist){
+getPODCalifornia <- function(aoi, dist){
   
   # create a temporary directory for all raw datafiles to be sent to
   dir.create(file.path(getwd(),"/temp_ewrims/"), showWarnings = FALSE)

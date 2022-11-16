@@ -23,7 +23,7 @@ getNOAA <-
     
     # add buffer around area of interest
     aoi <- aoi %>%
-      sf::st_buffer(dist = 0)
+      sf::st_buffer(dist = dist)
     
     #pull all stations and make spatial
     all <- ghcnd_stations() %>%
@@ -36,22 +36,21 @@ getNOAA <-
       st_filter(aoi) %>%
       distinct(id, .keep_all = TRUE) %>%
       st_join(aoi) %>%
-      dplyr::select(id, elevation, state, name, geometry) #%>%
-      #st_write('data/all/noaa_sites.shp')
+      dplyr::select(id, elevation, state, name, geometry)
     
     
     #get weather data for all stations (depending on dates and how many stations this can take a while)
-    # weather_data <- meteo_pull_monitors(station_aoi$id[i], date_min = startDate,
-    #                                                        date_max = endDate)
+    weather_data <- meteo_pull_monitors(station_aoi$id[i], date_min = startDate,
+                                                           date_max = endDate)
  
      # Katie code for saving all the data... for if/when it crashes :-(
-      for(i in 1:nrow(station_aoi)){
-      meteo_pull_monitors(station_aoi$id[i], date_min = "1979-10-01",
-                          date_max = "2022-09-30") %>%
-      write_csv(paste0('data/all/noaa/', station_aoi$id[i], '.csv'))}
-    weather_data <- list.files(path = "data/all/noaa", pattern = "*.csv", full.names = TRUE) %>%
-      plyr::ldply(., .fun = read.csv) %>%
-      distinct(.keep_all=TRUE)
+    #   for(i in 1:nrow(station_aoi)){
+    #   meteo_pull_monitors(station_aoi$id[i], date_min = "1979-10-01",
+    #                       date_max = "2022-09-30") %>%
+    #   write_csv(paste0('data/all/noaa/', station_aoi$id[i], '.csv'))}
+    # weather_data <- list.files(path = "data/all/noaa", pattern = "*.csv", full.names = TRUE) %>%
+    #   plyr::ldply(., .fun = read.csv) %>%
+    #   distinct(.keep_all=TRUE)
     
     #tie back to coordinates
     final_data <- weather_data %>%
