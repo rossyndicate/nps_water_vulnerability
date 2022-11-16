@@ -7,7 +7,7 @@
 #' @param save Whether to save the resulting file (TRUE/FALSE)
 #' @param path If `save = TRUE`, the file path to save to
 #' @return An sf object of USGS gaging stations within given spatial boundary and attributes
-pullNWIS <- function(aoi, dist,  save = FALSE, path = NULL){
+inventoryNWIS <- function(aoi, dist,  save = FALSE, path = NULL){
   
   sf::sf_use_s2(FALSE)
   

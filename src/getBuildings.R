@@ -1,6 +1,6 @@
 #' Import NPS buildings
 
-downloadBuildings <- function(aoi, save=FALSE, path){
+getBuildings <- function(aoi, save=FALSE, path){
   
   #install.packages("arcgisbinding", repos="https://r.esri.com", type="win.binary")
   
@@ -20,5 +20,5 @@ downloadBuildings <- function(aoi, save=FALSE, path){
     
   }
   
-  return(ecoregs)
+  return(buildings)
 }
