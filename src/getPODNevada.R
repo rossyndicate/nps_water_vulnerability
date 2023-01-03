@@ -5,7 +5,7 @@
 #' @param dist The distance (in the same units used in  `park`) to buffer around spatial object `park`
 #' 
 #' @return An sf object of points of diversion within given spatial boundary and attributes
-getPODNevada <- function(aoi, dist){
+getPODNevada <- function(aoi, dist=0){
   
   # add buffer around park boundary  
   aoi_buffer <- aoi %>%
