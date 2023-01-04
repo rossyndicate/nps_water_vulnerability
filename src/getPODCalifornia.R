@@ -6,7 +6,7 @@
 #' @param dist The distance (in the same units used in  `park`) to buffer around spatial object `park`
 #' 
 #' @return An sf object of points of diversion within given spatial boundary and attributes
-getPODCalifornia <- function(aoi, dist){
+getPODCalifornia <- function(aoi, dist=0){
   
   # create a temporary directory for all raw datafiles to be sent to
   dir.create(file.path(getwd(),"/temp_ewrims/"), showWarnings = FALSE)

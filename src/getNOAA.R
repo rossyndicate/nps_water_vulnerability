@@ -26,21 +26,21 @@ getNOAA <-
       sf::st_buffer(dist = dist)
     
     #pull all stations and make spatial
-    all <- ghcnd_stations() %>%
-      st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+    all <- rnoaa::ghcnd_stations() %>%
+      sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
     
     
     #filter to park(s)
     station_aoi <- all %>%
-      st_transform(st_crs(aoi)) %>%
-      st_filter(aoi) %>%
-      distinct(id, .keep_all = TRUE) %>%
-      st_join(aoi) %>%
+      sf::st_transform(st_crs(aoi)) %>%
+      sf::st_filter(aoi) %>%
+      dplyr::distinct(id, .keep_all = TRUE) %>%
+      sf::st_join(aoi) %>%
       dplyr::select(id, elevation, state, name, geometry)
     
     
     #get weather data for all stations (depending on dates and how many stations this can take a while)
-    weather_data <- meteo_pull_monitors(station_aoi$id[i], date_min = startDate,
+    weather_data <- rnoaa::meteo_pull_monitors(station_aoi$id, date_min = startDate,
                                                            date_max = endDate)
  
      # Katie code for saving all the data... for if/when it crashes :-(
@@ -54,12 +54,12 @@ getNOAA <-
     
     #tie back to coordinates
     final_data <- weather_data %>%
-      left_join(station_aoi, by = "id") %>%
-      st_as_sf() #add argument on whether to return sf or tibble?
+      dplyr::left_join(station_aoi, by = "id") %>%
+      sf::st_as_sf() #add argument on whether to return sf or tibble?
 
     
     if (save == TRUE) {
-      write_sf(final_data, path)
+      sf::write_sf(final_data, path)
       
     }
     
