@@ -1,7 +1,6 @@
-#' Import and clean California Water Rights Spatial Data
+#' Import and clean Nevada Water Rights Spatial Data. Function still local -- need to change this!
 #' 
-#' This function imports geospatial data from the eWRIMS database (https://waterrightsmaps.waterboards.ca.gov/viewer/index.html?viewer=eWRIMS.eWRIMS_gvh#)
-#' 
+#'
 #' @param aoi An sf polygon object, often a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units used in  `park`) to buffer around spatial object `park`
 #' 
