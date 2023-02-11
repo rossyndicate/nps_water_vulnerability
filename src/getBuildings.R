@@ -1,6 +1,6 @@
 #' Import NPS buildings
 
-getBuildings <- function(aoi, save=FALSE, path){
+getBuildings <- function(aoi, dist=0, save=FALSE, path){
   
   #install.packages("arcgisbinding", repos="https://r.esri.com", type="win.binary")
   
@@ -8,15 +8,15 @@ getBuildings <- function(aoi, save=FALSE, path){
   
   sf::sf_use_s2(FALSE)
   
-  aoi <- aoi %>% 
+  buffer <- aoi %>% 
     sf::st_buffer(dist = dist)
   
   buildings <- sf::st_read(temp1) %>%
     sf::st_transform(4269) %>%
-    .[aoi,]
+    .[buffer,]
   
   if(save == TRUE){
-    sf::st_write(aoi, paste0(path, "/buildings.shp"))
+    sf::st_write(buildings, paste0(path, "/buildings.shp"))
     
   }
   
