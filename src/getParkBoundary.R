@@ -15,17 +15,16 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   call <- "https://irmaservices.nps.gov/datastore/v4/rest"
   
   #pull resource ID using reference ID of the park boundaries landing page
-  resID <- httr::GET(paste0(call, "/Reference/2225713/DigitalFiles")) %>% 
+  downloadLink <- httr::GET(paste0(call, "/Reference/2296705/DigitalFiles")) %>% 
     httr::content("text", encoding = "UTF-8") %>% 
     jsonlite::fromJSON(.,flatten = TRUE) %>% 
     dplyr::as_tibble() %>% 
     filter(str_detect(fileName, "nps_boundary")) %>% 
-    pull(resourceId) %>% 
-    as.numeric()
+    pull(downloadLink)
   
   #download boundary 
   temp1 <- tempfile()
-  download.file(paste0(call, "/DownloadFile/", resID), destfile = temp1, method = "curl")
+  download.file(downloadLink, destfile = temp1, method = "curl")
   temp2 <- tempfile()
   unzip(temp1, exdir = temp2)
   
