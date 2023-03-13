@@ -1,182 +1,237 @@
 #' Inventory of Aquarius dcontinuous data associated with any given park unit
 #' 
 #' This function imports all available continuous data from the NPS Aquarius Data Portal (https://irma.nps.gov/aqwebportal)
-#' This function is incredibly bulky and unsophisticated! Uses Rselenius so java and firefox need to  be installed on 
+#' This function is incredibly bulky and unsophisticated! Uses Rselenius so java and Firefox need to be installed on 
 #' local computer.
 #' 
 #' @param park The 4 digit national park code(s) for parks of interest
-#' @param save Whether to save (TRUE) the resulting dataset or not (FALSE)
-#' @param path If `save = TRUE`, the file path to save the tidied Aquarius table
 #' 
 #' @return A dataset containing tidied Aquarius data
-getAquarius <- function(park, save = FALSE, path = NULL){
+getAquarius <- function(park, path = NULL){
   
   library(tidyverse)
+  dir.create(file.path(getwd(), paste0("/data/all/aquarius/")), showWarnings = FALSE)
   
-  # create a temporary directory for all raw datafiles to be sent to
-  dir.create(file.path(getwd(),"temp_data/aquarius/temp/"), showWarnings = FALSE)
-  dir.create(file.path(getwd(),"temp_data/aquarius/raw_yuck/"), showWarnings = FALSE)
-  dir.create(file.path(getwd(),"temp_data/aquarius/coords/"), showWarnings = FALSE)
+  full_data <- vector("list", length = length(park))
   
-  downloadPath <- file.path(getwd(), "temp_data/aquarius/temp") %>% stringr::str_replace_all("/", "\\\\\\\\")
-  
-  # make sure server downloads data into appropriate folder (i.e., our temporary folder)
-  fprof <- RSelenium::makeFirefoxProfile(list(browser.download.dir = downloadPath,
-                                   browser.download.folderList = 2L,
-                                   browser.download.manager.showWhenStarting = FALSE,
-                                   browser.helperApps.neverAsk.openFile = "text/csv",
-                                   browser.helperApps.neverAsk.saveToDisk = "text/csv"))
-  
-  exCap <- list(firefox_profile = fprof$firefox_profile, 
-                # REMOVE  "Pop-up" CONSOLE:
-                "moz:firefoxOptions" = list(args = list('--headless')))
-  
-  # start up RSelenium session:
-  rD <- RSelenium::rsDriver(browser = "firefox", port = sample.int(1000, 1), extraCapabilities = exCap)
-  remDr <- rD$client
-  
-  # get list of all Aquarius sites from the portal
-  remDr$navigate('https://irma.nps.gov/aqwebportal/Data/List/Parameter/NoParameter/Location/DataSetsNo/Interval/Latest')
-  Sys.sleep(5) # provide time for site navigation
-  remDr$screenshot(display = TRUE)
-  
-  dropper <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[2]/div[1]/div[2]/div[2]/div[6]/div/button')
-  Sys.sleep(3) # provide time for navigation and selection
-  dropper$clickElement()
-  Sys.sleep(1)
-  dropper <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[2]/div[1]/div[2]/div[2]/div[6]/div/ul/li[2]/a')
-  Sys.sleep(3) # provide time for navigation and selection
-  dropper$clickElement()
-  Sys.sleep(3) # provide  time for download to start
-  
-  sites <- read.csv(list.files(path = "temp_data/aquarius/temp/", pattern = "*.csv", full.names = TRUE)[1], skip = 1)
-  
-  # select list of sites associated with our park(s) of interest
-  sites <- sites %>% dplyr::filter(grepl(paste0(paste(park, collapse = "|")), Identifier)) %>%
-    mutate(sites=paste0('https://irma.nps.gov/aqwebportal/Data/Location/Summary/Location/', Identifier))
-  locations <- sites$sites
-  
-  print(paste0(n_distinct(locations), ' sites associated with: ', park))
-  
-  
-  # function to download all data from each site's individual webpage on the data portal
-  web_runner <- function(locations){
+  for(i in 1:length(park)){
     
-    url <- sites %>%
-      dplyr::filter(sites == locations)
+    # Create the resting place for each park's Aquarius data:
+    dir.create(file.path(getwd(), paste0("/data/all/aquarius/temp/")), showWarnings = FALSE)
     
+    # create a temporary directory for all raw datafiles to be sent to
+    dir.create(file.path(getwd(), "/data/all/aquarius/temp/temp/"), showWarnings = FALSE)
+    dir.create(file.path(getwd(), "/data/all/aquarius/temp/raw_yuck/"), showWarnings = FALSE)
+    dir.create(file.path(getwd(), "/data/all/aquarius/temp/coords/"), showWarnings = FALSE)
     
-    remDr$navigate(url$sites)
+    downloadPath <- file.path(getwd(), "/data/all/aquarius/temp/temp")# %>% stringr::str_replace_all("/", "\\\\\\\\")
     
-    Sys.sleep(5) # provide time for navigation 
+    # make sure server downloads data into appropriate folder (i.e., our temporary folder)
+    fprof <- RSelenium::makeFirefoxProfile(list(browser.download.dir = downloadPath,
+                                                browser.download.folderList = 2L,
+                                                browser.download.manager.showWhenStarting = FALSE,
+                                                browser.helperApps.neverAsk.openFile = "text/csv",
+                                                browser.helperApps.neverAsk.saveToDisk = "text/csv"))
     
-    remDr$screenshot(display = TRUE) # shows webpage for each site
-
-    try(dropper <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div[1]/div/div[2]/div/div[18]/div/a[3]'),
-        silent=T)  
-    Sys.sleep(5)
-    try(dropper$clickElement())
+    exCap <- list(firefox_profile = fprof$firefox_profile, 
+                  # REMOVE  "Pop-up" CONSOLE:
+                  "moz:firefoxOptions" = list(args = list('--headless')))
+    
+    # start up RSelenium session:
+    rD <- RSelenium::rsDriver(browser = "firefox", port = sample.int(1000, 1), extraCapabilities = exCap)
+    remDr <- rD$client
+    
+    # get list of all Aquarius sites from the portal
+    remDr$navigate('https://irma.nps.gov/aqwebportal/Data/List/Parameter/NoParameter/Location/DataSetsNo/Interval/Latest')
+    Sys.sleep(3) # provide time for site navigation
+    remDr$screenshot(display = TRUE)
+    
+    dropper <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[2]/div[1]/div[2]/div[2]/div[6]/div/button')
+    Sys.sleep(3) # provide time for navigation and selection
+    dropper$clickElement()
     Sys.sleep(3)
-    try(dropper <- remDr$findElement(using = 'xpath', value = 'html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div/div/div[2]/div/div[18]/div/a[4]'),
-        silent=T)
-    Sys.sleep(5)
-    try(dropper$clickElement())
-    Sys.sleep(10) # provide ample time for download to configure
+    dropper <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[2]/div[1]/div[2]/div[2]/div[6]/div/ul/li[2]/a')
+    Sys.sleep(3) # provide time for navigation and selection
+    dropper$clickElement()
+    Sys.sleep(3) # provide  time for download to start
     
-    # Site coordinates
-    try(coords <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div/div/div[2]/div/div[4]/div[2]'))
-    Sys.sleep(3)
-    try(
-      coord <- coords$getElementText()[[1]] %>%
-      as_tibble() %>%
-      tidyr::separate(., value, into=c('Long','Lat'), sep=c(",")) %>%
-      tidyr::separate(., Lat, c("non","Lat","EPSG","P2"), sep=c(" ")) %>%
-      dplyr::mutate(EPSG=paste0(EPSG,P2)) %>%
-      dplyr::select(-c(P2,non)) %>%
-      mutate(site=url$Identifier) %>%
-      write_csv(paste0('temp_data/aquarius/coords/',url$Identifier,'.csv')),
-      silent=TRUE)
+    sites <- read.csv(list.files(path = downloadPath, pattern = "*.csv", full.names = TRUE)[1], skip = 1)
     
-  }
-  
-  purrr::map(locations,
-      possibly(web_runner, otherwise=1+1))
-  
-  # buy more time if they haven't all been fully downloaded
-  slow_locy <- sub(paste0("-",lubridate::year(Sys.Date()),".*"), "", sub(".*LocationExport-", "", list.files(path = "temp_data/aquarius/temp/", pattern = "*.zip", full.names = TRUE)))
-  
-  slow_locy <- filter(sites, !Identifier %in% slow_locy)
-  
-  purrr::map(slow_locy$sites,
-             possibly(web_runner, otherwise=1+1))
-  
-  Sys.sleep(10) # ensure all site data has been downloaded... 
-  
-  # Which sites didn't seem to work?
-  if(n_distinct(list.files(path = "temp_data/aquarius/temp/", pattern = "*.zip", full.names = TRUE)) < n_distinct(locations)) {print(paste0('Unable to download the following sites: ', slow_locy$Identifier))}
-  
-  # end the RSelenium server session
-  remDr$close()
-  rD[["server"]]$stop()
-  
-  temp <- list.files(path = "temp_data/aquarius/temp/", pattern = "*.zip", full.names = TRUE)
-  
-  # unzip all your downloaded data files (one for every site)
-  try(plyr::ldply(.data = temp, .fun = unzip, exdir = 'temp_data/aquarius/raw_yuck/'), silent = TRUE)
-  
-  coords <- plyr::ldply(list.files(path = "temp_data/aquarius/coords/", pattern = "*.csv", full.names = TRUE), read.csv)  %>%
-    dplyr::mutate(EPSG=stringr::str_extract(string = EPSG,
-                                            pattern = "(?<=\\().*(?=\\))"))
-  
-  # delete the temporary folder
-  unlink(file.path(getwd(), "temp_data/aquarius/temp/"), recursive = T)
-  unlink(file.path(getwd(), "temp_data/aquarius/coords/"), recursive = T)
-  
-  # Tidy Aquarius data into one data frame
-  aquarius_files <- list.files(path='temp_data/aquarius/raw_yuck/', pattern="*.csv", full.names=TRUE, recursive=TRUE) %>%
-    tibble::as_tibble()
-  
-  aquarius <- function(aquarius_union) {
+    # select list of sites associated with our park(s) of interest
+    sites <- sites %>% dplyr::filter(grepl(paste0(park[i]), Identifier)) %>%
+      mutate(sites=paste0('https://irma.nps.gov/aqwebportal/Data/Location/Summary/Location/', Identifier))
+    locations <- sites$sites
     
-    tidier <- function(dataset){
+    print(paste0(n_distinct(locations), ' Aquarius sites associated with ', park[i]))
+    
+    # Create empty tibble for storing for loop data into. 
+    if(nrow(sites) == 0){
       
-      file <- aquarius_files %>%
-        dplyr::filter(value==dataset)
+      full_data[[i]] <- tibble(c("timestamp","siteID","parameter","val","units","UNIT_CODE","Long","Lat","EPSG","Location.Type"),
+                               c( NA, NA, NA, NA, NA, NA, NA, NA, NA, NA))
       
-      site_name <- stringr::str_sub(read.csv(paste0(file$value), header=F)[1,1],20)
-      
-      unit <- gsub("Value..","",names(read.csv(paste0(file$value), skip=1) %>% select(3)))  
-      
-      read.csv(paste0(file$value), skip=1) %>%
-        dplyr::mutate(parm_site=site_name) %>%
-        tidyr::separate(parm_site, c("parameter","siteID"), "@") %>%
-        dplyr::rename(timestamp=1,
-                      val=3) %>%
-        dplyr::mutate(timestamp=as.character(timestamp),
-                      units=unit)
+      print(paste0(park, " does not have any Aquarius data."))
     }
     
-    ali <- purrr::map_dfr(aquarius_union,tidier)
-    
+    if(nrow(sites) != 0) {
+      
+      # function to download all data from each site's individual webpage on the data portal
+      web_runner <- function(locations){
+        
+        url <- sites %>%
+          dplyr::filter(sites == locations)
+        
+        remDr$navigate(url$sites)
+        
+        Sys.sleep(5) # provide time for navigation 
+        
+        remDr$screenshot(display = TRUE) # shows webpage for each site
+        
+        try(dropper <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div[1]/div/div[2]/div/div[18]/div/a[3]'),
+            silent=T)  
+        Sys.sleep(4)
+        try(dropper$clickElement())
+        Sys.sleep(4)
+        try(dropper <- remDr$findElement(using = 'xpath', value = 'html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div/div/div[2]/div/div[18]/div/a[4]'),
+            silent=T)
+        Sys.sleep(4)
+        try(dropper$clickElement())
+        Sys.sleep(4) # provide ample time for download to configure
+        
+        # Site coordinates
+        try(coords <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div/div/div[2]/div/div[4]/div[2]'))
+        Sys.sleep(3)
+        try(
+          coord <- coords$getElementText()[[1]] %>%
+            as_tibble() %>%
+            tidyr::separate(., value, into=c('Long', 'Lat'), sep = c(",")) %>%
+            tidyr::separate(., Lat, c("non", "Lat", "EPSG", "P2"), sep = c(" ")) %>%
+            dplyr::mutate(EPSG = paste0(EPSG, P2)) %>%
+            dplyr::select(-c(P2, non)) %>%
+            mutate(site = url$Identifier) %>%
+            write_csv(paste0('data/all/aquarius/temp/coords/', url$Identifier, '.csv')),
+          silent=TRUE)
+        
+      }
+      
+      purrr::map(locations,
+                 possibly(web_runner, otherwise = 1 + 1))
+      
+      # function to download all data from each site's individual webpage on the data portal... the slooooow way.
+      web_runner <- function(locations){
+        
+        url <- sites %>%
+          dplyr::filter(sites == locations)
+        
+        remDr$navigate(url$sites)
+        
+        Sys.sleep(5) # provide time for navigation 
+        
+        remDr$screenshot(display = TRUE) # shows webpage for each site
+        
+        try(dropper <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div[1]/div/div[2]/div/div[18]/div/a[3]'),
+            silent = T)  
+        Sys.sleep(3)
+        try(dropper$clickElement())
+        Sys.sleep(60)
+        try(dropper <- remDr$findElement(using = 'xpath', value = 'html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div/div/div[2]/div/div[18]/div/a[4]'),
+            silent=T)
+        Sys.sleep(p3)
+        try(dropper$clickElement())
+        Sys.sleep(60) # provide ample time for download to configure
+        
+        # Site coordinates
+        try(coords <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div/div/div[2]/div/div[4]/div[2]'))
+        Sys.sleep(3)
+        try(
+          coord <- coords$getElementText()[[1]] %>%
+            as_tibble() %>%
+            tidyr::separate(., value, into = c('Long', 'Lat'), sep = c(",")) %>%
+            tidyr::separate(., Lat, c("non", "Lat", "EPSG", "P2"), sep = c(" ")) %>%
+            dplyr::mutate(EPSG = paste0(EPSG, P2)) %>%
+            dplyr::select(-c(P2, non)) %>%
+            mutate(site = url$Identifier) %>%
+            write_csv(paste0('data/all/aquarius/temp/coords/', url$Identifier, '.csv')),
+          silent=TRUE)
+        
+      }
+      
+      # buy more time if they haven't all been fully downloaded
+      slow_locy = sub(paste0("-",lubridate::year(Sys.Date()),".*"), "", sub(".*LocationExport-", "", list.files(path = downloadPath, pattern = "*.zip", full.names = TRUE)))
+      
+      slow_locy = filter(sites, !Identifier %in% slow_locy)
+      
+      purrr::map(slow_locy$sites,
+                 possibly(web_runner, otherwise = 1 + 1))
+      
+      Sys.sleep(10) # ensure all site data has been downloaded... 
+      
+      # Which sites didn't seem to work?
+      if(n_distinct(list.files(path = downloadPath, pattern = "*.zip", full.names = TRUE)) < n_distinct(locations)) {print(paste0('Unable to download the following sites: ', slow_locy$Identifier))}
+      
+      # end the RSelenium server session
+      remDr$close()
+      rD[["server"]]$stop()
+      
+      temp <- list.files(path = paste0(downloadPath, "/"), pattern = "*.zip", full.names = TRUE)
+      
+      # unzip all your downloaded data files (one for every site)
+      try(plyr::ldply(.data = temp, .fun = unzip, exdir = 'data/all/aquarius/temp/raw_yuck/'), silent = TRUE)
+      
+      try(coords <- plyr::ldply(list.files(path = "data/all/aquarius/temp/coords/", pattern = "*.csv", full.names = TRUE), read.csv)  %>%
+            dplyr::mutate(EPSG=stringr::str_extract(string = EPSG,
+                                                    pattern = "(?<=\\().*(?=\\))")), silent = TRUE)
+      
+      # delete the temporary folder
+      unlink(file.path(downloadPath), recursive = T)
+      unlink(file.path(downloadPath), recursive = T)
+      
+      # Tidy Aquarius data into one data frame
+      try(aquarius_files <- list.files(path='data/all/aquarius/temp/raw_yuck/', pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>%
+            tibble::as_tibble())
+      
+      aquarius <- function(aquarius_union) {
+        
+        tidier <- function(dataset){
+          
+          file <- aquarius_files %>%
+            dplyr::filter(value == dataset)
+          
+          site_name <- stringr::str_sub(read.csv(paste0(file$value), header=F)[1,1],20)
+          
+          unit <- gsub("Value..","",names(read.csv(paste0(file$value), skip = 1) %>% select(3)))  
+          
+          read.csv(paste0(file$value), skip = 1) %>%
+            dplyr::mutate(parm_site = site_name) %>%
+            tidyr::separate(parm_site, c("parameter","siteID"), "@") %>%
+            dplyr::rename(timestamp = 1,
+                          val = 3) %>%
+            dplyr::mutate(timestamp = as.character(timestamp),
+                          units = unit)
+        }
+        
+        ali <- purrr::map_dfr(aquarius_union, tidier)
+        
+      }
+      
+      full_data[[i]] <- aquarius_files %>%
+        dplyr::mutate(my_pretty = map(value, aquarius)) %>%
+        tidyr::unnest(cols=my_pretty) %>%
+        mutate(UNIT_CODE=substr(siteID, 1, 4)) %>%
+        select(c(timestamp, siteID, parameter, val, units, UNIT_CODE)) %>%
+        dplyr::left_join(.,coords, by = c("siteID" = "site")) %>%
+        dplyr::left_join(.,dplyr::select(sites, c(Identifier, Location.Type)), by = c("siteID" = "Identifier"))
+      
+      write_csv(full_data, paste0('data/all/aquarius/', park[i], "_aquarius_data.csv"))
+      
+      unlink(file.path(getwd(), "data/all/aquarius/temp/"), recursive = T)
+      
+      print(paste0(park, "Aquarius data downloaded."))
+    }
   }
   
-  tidiest <- aquarius_files %>%
-    dplyr::mutate(my_pretty = map(value, aquarius)) %>%
-    tidyr::unnest(cols=my_pretty) %>%
-    mutate(UNIT_CODE=substr(siteID,1,4)) %>%
-    select(c(timestamp,siteID,parameter,val,units,UNIT_CODE)) %>%
-    dplyr::left_join(.,coords,by=c("siteID"="site")) %>%
-    dplyr::left_join(.,dplyr::select(sites, c(Identifier,Location.Type)),by=c("siteID"="Identifier"))
+  full_data <- bind_rows(full_data)
   
- 
-  unlink(file.path(getwd(), "temp_data/aquarius/"), recursive = T)
+  return(full_data)
   
-  if(save == TRUE){
-    write.csv(tidiest, paste0(path, "/aquarius_data.csv"))
-    
-  }
-  
-  return(tidiest)
-  
-  }
-
+}
