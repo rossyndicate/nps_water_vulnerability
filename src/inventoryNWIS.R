@@ -4,10 +4,8 @@
 #' 
 #' @param aoi An sf polygon object, often a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units used by `getParkBoundary()`) to buffer around park boundary
-#' @param save Whether to save the resulting file (TRUE/FALSE)
-#' @param path If `save = TRUE`, the file path to save to
 #' @return An sf object of USGS gaging stations within given spatial boundary and attributes
-inventoryNWIS <- function(aoi, dist,  save = FALSE, path = NULL){
+inventoryNWIS <- function(aoi, dist){
   
   sf::sf_use_s2(FALSE)
   
@@ -15,7 +13,7 @@ inventoryNWIS <- function(aoi, dist,  save = FALSE, path = NULL){
   aoi_buffer <- aoi %>% 
     sf::st_buffer(., dist = dist)
   
- # aoi <- getParkBoundary("DEVA")
+  # aoi <- getParkBoundary("DEVA")
   
   gage_sites <- vector("list", length = nrow(aoi_buffer))
   
@@ -47,20 +45,15 @@ inventoryNWIS <- function(aoi, dist,  save = FALSE, path = NULL){
     # sf::st_join(., dplyr::select(aoi, UNIT_CODE), left=T) %>%
     # dplyr::mutate(within_park=ifelse(is.na(UNIT_CODE.y), "Outside","Within")) %>%
     dplyr::select(c(site_no,
-                      site_name=station_nm,
-                      data_type_cd,
-                      site_type_cd=site_tp_cd,
-                      n_obs=count_nu,
-                      begin_date,
-                      end_date,
-                      parameter=parameter_name_description,
-                      code=parm_cd))
-                      #within_park,
-                      #UNIT_CODE=UNIT_CODE.x)) #%>%
-    # flow-related data only for now
-    #dplyr::filter(grepl("discharge|flow|height|level|width",parameter,ignore.case=T)) %>%
-    #dplyr::filter(!grepl("sediment",parameter,ignore.case=T))
-  
+                    site_name=station_nm,
+                    data_type_cd,
+                    site_type_cd=site_tp_cd,
+                    n_obs=count_nu,
+                    begin_date,
+                    end_date,
+                    parameter=parameter_name_description,
+                    code=parm_cd))
+    
   site_url <- 'https://maps.waterdata.usgs.gov/mapper/help/sitetype.html'
   
   table <- rvest::read_html(site_url) %>%
@@ -81,11 +74,8 @@ inventoryNWIS <- function(aoi, dist,  save = FALSE, path = NULL){
                                data_type_cd=="pk" ~ "Peak Measurements",
                                data_type_cd=="ad" ~ "USGS Annual Water Data Report",
                                data_type_cd=="aw" ~ "Active Groundwater Level Network",
-                               data_type_cd=="id" ~ "Historic Instantaneous"))
-
-  if(save == TRUE)
-    {write_csv(inventory, paste0(path,'/nwis_flow_inventory.csv'))}
-  
+                               data_type_cd=="id" ~ "Historic Instantaneous")) %>%
+    sf::st_join(., dplyr::select(aoi_buffer, UNIT_CODE))
   
   return(inventory)
   

@@ -8,10 +8,13 @@
 #' @return An sf object of points of diversion within given spatial boundary and attributes
 getPODCalifornia <- function(aoi, dist=0){
   
+  options(timeout = max(1000, getOption("timeout")))
+  
   # create a temporary directory for all raw datafiles to be sent to
   dir.create(file.path(getwd(),"/temp_ewrims/"), showWarnings = FALSE)
   
-  downloadPath <- file.path(getwd(),"/temp_ewrims/") %>% stringr::str_replace_all("/", "\\\\\\\\")
+  downloadPath <- file.path(getwd(),"/temp_ewrims/") #%>% stringr::str_replace_all("/", "\\\\\\\\")
+  
   
   # make sure server downloads data into appropriate folder (i.e., our temporary folder)
   fprof <- RSelenium::makeFirefoxProfile(list(browser.download.dir = downloadPath,
@@ -29,7 +32,7 @@ getPODCalifornia <- function(aoi, dist=0){
   
   # get list of all Aquarius sites from the portal
   remDr$navigate('https://gispublic.waterboards.ca.gov/portal/home/item.html?id=746870b4aa1f47579ca1bf5d6c9924a8')
-  Sys.sleep(5) # provide time for site navigation
+  Sys.sleep(7) # provide time for site navigation
   remDr$screenshot(display = TRUE)
   
   dropper <- remDr$findElement(using = 'xpath', value = '/html/body/div[2]/div/div[2]/div/div[2]/div/main/div[1]/aside/div/button[6]')
@@ -57,11 +60,11 @@ getPODCalifornia <- function(aoi, dist=0){
   nearby_wr <- ca_wr %>%
     dplyr::select(POD_ID,LATITUDE,LONGITUDE,DIVERSION_SITE_NAME,SOURCE_NAME) %>%
     dplyr::inner_join(., table, by=c("POD_ID"="CORE_POD_ID")) %>%
-    sf::st_intersection(., dplyr::select(aoi_buffer)) %>%
-    #sf::st_join(.,dplyr::select(aoi,within=UNIT_CODE),left=TRUE) %>%
-    dplyr::mutate(park_right=ifelse(grepl("National Park", LAST_NAME, ignore.case=T), "Park","Non-park"))#,
-                  #within_park=ifelse(UNIT_CODE==within,"Within","Outside")) %>%
-    #select(-within)
+    sf::st_intersection(., dplyr::select(aoi_buffer, UNIT_CODE)) %>%
+    sf::st_join(.,dplyr::select(aoi,within=UNIT_CODE),left=TRUE) %>%
+    dplyr::mutate(park_right=ifelse(grepl("National Park", LAST_NAME, ignore.case=T), "Park","Non-park"),
+                  within_park=ifelse(UNIT_CODE==within,"Within","Outside")) %>%
+    select(-within)
   
   # end the RSelenium server session
   remDr$close()
