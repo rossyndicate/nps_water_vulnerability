@@ -38,7 +38,23 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
     dplyr::summarize()
     
   if(save == TRUE){
-    sf::st_write(poi, paste0(path, "/park_boundary.shp"))
+    
+    for (i in 1:length(park)){
+      
+      #create park folder if does not already exist in 'path'
+      if (!dir.exists(paste0(path, park[i]))) {
+        
+        dir.create(paste0(path, park[i]))
+      }
+      
+      # save park boundary in park folder
+      sf::st_write(filter(park_boundary, UNIT_CODE == park[i]), 
+                   paste0(path, park[i], "/park_boundary_", park[i], ".shp"))
+      
+      
+    }
+    
+    print(paste("Park boundary shapefiles saved to respective folders in:", paste0(getwd(), "/", path)))
     
   }
   
