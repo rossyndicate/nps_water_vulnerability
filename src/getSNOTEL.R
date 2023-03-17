@@ -5,6 +5,7 @@
 #' @param aoi An sf polygon/multipolygon object, preferably a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units as the aoi object) to buffer around park boundary
 #' @param years The years to pull data for. Default just pulls current year, but can be a string of years 
+#' @param timeseries either 'Daily' or 'Hourly
 #' @param save Whether to save the resulting file (TRUE/FALSE)
 #' @param path If `save == TRUE`, the file path to save to
 #' @return An sf object of weather stations within given spatial boundary and attributes
@@ -12,6 +13,7 @@ getSNOTEL <-
   function(aoi,
            dist = 0,
            years = substr(Sys.Date(), 1, 4),
+           timeseries = "Daily",
            save = FALSE,
            path = NULL) {
     sf::sf_use_s2(FALSE)
@@ -54,7 +56,9 @@ getSNOTEL <-
     dat <- vector("list", length(siteID))
     
     for (i in 1:length(siteID)) {
-      dat[[i]] <- soilDB::fetchSCAN(site.code = siteID[i], year = years) %>%
+      dat[[i]] <- soilDB::fetchSCAN(site.code = siteID[i], 
+                                    year = years,
+                                    timeseries = "Daily") %>%
         bind_rows() %>%
         as_tibble() %>%
         #remove metadata columns
