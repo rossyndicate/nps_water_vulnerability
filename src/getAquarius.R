@@ -231,7 +231,7 @@ full_data <- vector("list", length = length(park))
         dplyr::left_join(.,coords, by = c("siteID" = "site")) %>%
         dplyr::left_join(.,dplyr::select(sites, c(Identifier, Location.Type)), by = c("siteID" = "Identifier"))
       
-      write_csv(full_data[[i]], paste0(path, "/", park[i], "/aquarius", "/", park[i], "_aquarius_data.csv"))
+      write_csv(full_data, paste0(path, "/", park[i], "/aquarius", "/", park[i], "_aquarius_data.csv"))
       
       unlink(file.path(getwd(), paste0(path, "/", park[i], "/aquarius", "/temp/")), recursive = T)
       
