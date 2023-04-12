@@ -12,21 +12,22 @@
 #' @return An sf object of weather stations within given spatial boundary and attributes
 getNOAA <-
   function(aoi,
-           dist = 0,
+           park,
            startDate = "first",
            endDate = Sys.Date(),
-           noaa_key,
+           #noaa_key,
            save = FALSE,
            path = NULL) {
     
     
-    if (is.null(noaa_key)) {
-      print("Must supply your NOAA key")
-      stop()
-    }
+    
+    # if (is.null(noaa_key)) {
+    #   print("Must supply your NOAA key")
+    #   stop()
+    # }
     
 
-    options(noaakey = noaa_key)
+    #options(noaakey = noaa_key)
     
     sf::sf_use_s2(FALSE)
     
@@ -36,7 +37,7 @@ getNOAA <-
       sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
     
     
-    #filter to park(s)
+    #filter to aoi
     station_aoi <- all %>%
       sf::st_transform(st_crs(aoi)) %>%
       sf::st_filter(aoi) %>%
@@ -61,7 +62,27 @@ getNOAA <-
 
     
     if (save == TRUE) {
-      sf::write_sf(final_data, path)
+      
+      # retrieve unique park names
+      parks <- unique(aoi$UNIT_CODE)
+      
+      for (i in 1:length(parks)){
+        
+        #create park folder if does not already exist in 'path'
+        if (!dir.exists(paste0(path, park[i]))) {
+          
+          dir.create(paste0(path, park[i]))
+        }
+        
+        # save park boundary in park folder
+        sf::write_sf(filter(final_data, UNIT_CODE == parks[i]), 
+                     paste0(path, parks[i], "/noaa_", parks[i], ".shp"))
+        
+        
+      }
+      
+      print(paste("NOAA data for specified dates saved to respective NPS park folders in:", paste0(getwd(), "/", path)))
+      
       
     }
     
