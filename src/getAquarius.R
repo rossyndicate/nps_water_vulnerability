@@ -7,24 +7,29 @@
 #' @param park The 4 digit national park code(s) for parks of interest
 #' 
 #' @return A dataset containing tidied Aquarius data
-getAquarius <- function(park, path = NULL){
+getAquarius <- function(park, path = "data/all/", system = "Mac"){
   
-  library(tidyverse)
-  dir.create(file.path(getwd(), paste0("/data/all/aquarius/")), showWarnings = FALSE)
+  #park = "SHEN"
+  #path = "data/all/aquarius/"
+  #system = "Mac"
   
-  full_data <- vector("list", length = length(park))
+full_data <- vector("list", length = length(park))
   
   for(i in 1:length(park)){
     
+    dir.create(file.path(getwd(), paste0("/", path, "/", park[i], "/aquarius/")), showWarnings = FALSE)
+    
     # Create the resting place for each park's Aquarius data:
-    dir.create(file.path(getwd(), paste0("/data/all/aquarius/temp/")), showWarnings = FALSE)
+    dir.create(file.path(getwd(), paste0("/", path, "/", park[i], "/aquarius/temp/")), showWarnings = FALSE)
     
     # create a temporary directory for all raw datafiles to be sent to
-    dir.create(file.path(getwd(), "/data/all/aquarius/temp/temp/"), showWarnings = FALSE)
-    dir.create(file.path(getwd(), "/data/all/aquarius/temp/raw_yuck/"), showWarnings = FALSE)
-    dir.create(file.path(getwd(), "/data/all/aquarius/temp/coords/"), showWarnings = FALSE)
+    dir.create(file.path(getwd(), paste0("/", path, "/", park[i], "/aquarius", "/temp/temp/")), showWarnings = FALSE)
+    dir.create(file.path(getwd(), paste0("/", path, "/", park[i], "/aquarius", "/temp/raw_yuck/")), showWarnings = FALSE)
+    dir.create(file.path(getwd(), paste0("/", path, "/", park[i], "/aquarius", "/temp/coords/")), showWarnings = FALSE)
     
-    downloadPath <- file.path(getwd(), "/data/all/aquarius/temp/temp")# %>% stringr::str_replace_all("/", "\\\\\\\\")
+    downloadPath <- file.path(getwd(), paste0("/", path, "/", park[i], "/aquarius", "/temp/temp"))
+    
+    if(system == "PC") {downloadPath <- downloadPath %>% stringr::str_replace_all("/", "\\\\\\\\")}
     
     # make sure server downloads data into appropriate folder (i.e., our temporary folder)
     fprof <- RSelenium::makeFirefoxProfile(list(browser.download.dir = downloadPath,
@@ -64,7 +69,7 @@ getAquarius <- function(park, path = NULL){
     
     print(paste0(n_distinct(locations), ' Aquarius sites associated with ', park[i]))
     
-    # Create empty tibble for storing for loop data into. 
+    # Create empty tibble for storing for loop data into if not sites exist for a park. 
     if(nrow(sites) == 0){
       
       full_data[[i]] <- tibble(c("timestamp","siteID","parameter","val","units","UNIT_CODE","Long","Lat","EPSG","Location.Type"),
@@ -96,9 +101,10 @@ getAquarius <- function(park, path = NULL){
             silent=T)
         Sys.sleep(4)
         try(dropper$clickElement())
-        Sys.sleep(4) # provide ample time for download to configure
+        Sys.sleep(4) # provide ample time for download to configure. totally dependent on web connection
+                     # I need to find code that waits until you know the data has finished downloading. 
         
-        # Site coordinates
+        # Site coordinates... not listed in data table, so pull from site's meta-data table on webpage
         try(coords <- remDr$findElement(using = 'xpath', value = '/html/body/section/section/section/div[3]/div[4]/div[1]/div[6]/div/div[1]/div[1]/div/div/div[2]/div/div[4]/div[2]'))
         Sys.sleep(3)
         try(
@@ -109,7 +115,7 @@ getAquarius <- function(park, path = NULL){
             dplyr::mutate(EPSG = paste0(EPSG, P2)) %>%
             dplyr::select(-c(P2, non)) %>%
             mutate(site = url$Identifier) %>%
-            write_csv(paste0('data/all/aquarius/temp/coords/', url$Identifier, '.csv')),
+            write_csv(paste0(path, "/", park[i], "/aquarius", "/temp/coords/", url$Identifier, '.csv')),
           silent=TRUE)
         
       }
@@ -151,13 +157,16 @@ getAquarius <- function(park, path = NULL){
             dplyr::mutate(EPSG = paste0(EPSG, P2)) %>%
             dplyr::select(-c(P2, non)) %>%
             mutate(site = url$Identifier) %>%
-            write_csv(paste0('data/all/aquarius/temp/coords/', url$Identifier, '.csv')),
+            write_csv(paste0(path, "/", park[i], "/aquarius", '/temp/coords/', url$Identifier, '.csv')),
           silent=TRUE)
         
       }
       
       # buy more time if they haven't all been fully downloaded
-      slow_locy = sub(paste0("-",lubridate::year(Sys.Date()),".*"), "", sub(".*LocationExport-", "", list.files(path = downloadPath, pattern = "*.zip", full.names = TRUE)))
+      slow_locy = sub(paste0("-",lubridate::year(Sys.Date()),".*"), "",
+                      sub(".*LocationExport-", "",
+                          list.files(path = downloadPath, full.names = TRUE))) %>%
+        subset(grepl(park[i],. ))
       
       slow_locy = filter(sites, !Identifier %in% slow_locy)
       
@@ -176,18 +185,18 @@ getAquarius <- function(park, path = NULL){
       temp <- list.files(path = paste0(downloadPath, "/"), pattern = "*.zip", full.names = TRUE)
       
       # unzip all your downloaded data files (one for every site)
-      try(plyr::ldply(.data = temp, .fun = unzip, exdir = 'data/all/aquarius/temp/raw_yuck/'), silent = TRUE)
+      try(plyr::ldply(.data = temp, .fun = unzip, exdir = paste0(path, "/", park[i], "/aquarius","/temp/raw_yuck/")), silent = TRUE)
       
-      try(coords <- plyr::ldply(list.files(path = "data/all/aquarius/temp/coords/", pattern = "*.csv", full.names = TRUE), read.csv)  %>%
+      try(coords <- plyr::ldply(list.files(path = paste0(path, "/", park[i], "/aquarius","/temp/coords/"), pattern = "*.csv", full.names = TRUE), read.csv)  %>%
             dplyr::mutate(EPSG=stringr::str_extract(string = EPSG,
                                                     pattern = "(?<=\\().*(?=\\))")), silent = TRUE)
       
       # delete the temporary folder
       unlink(file.path(downloadPath), recursive = T)
-      unlink(file.path(downloadPath), recursive = T)
+      
       
       # Tidy Aquarius data into one data frame
-      try(aquarius_files <- list.files(path='data/all/aquarius/temp/raw_yuck/', pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>%
+      try(aquarius_files <- list.files(path=paste0(path, "/", park[i], "/aquarius","/temp/raw_yuck/"), pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>%
             tibble::as_tibble())
       
       aquarius <- function(aquarius_union) {
@@ -217,21 +226,21 @@ getAquarius <- function(park, path = NULL){
       full_data[[i]] <- aquarius_files %>%
         dplyr::mutate(my_pretty = map(value, aquarius)) %>%
         tidyr::unnest(cols=my_pretty) %>%
-        mutate(UNIT_CODE=substr(siteID, 1, 4)) %>%
-        select(c(timestamp, siteID, parameter, val, units, UNIT_CODE)) %>%
+        dplyr::mutate(UNIT_CODE=substr(siteID, 1, 4)) %>%
+        dplyr::select(c(timestamp, siteID, parameter, val, units, UNIT_CODE)) %>%
         dplyr::left_join(.,coords, by = c("siteID" = "site")) %>%
         dplyr::left_join(.,dplyr::select(sites, c(Identifier, Location.Type)), by = c("siteID" = "Identifier"))
       
-      write_csv(full_data, paste0('data/all/aquarius/', park[i], "_aquarius_data.csv"))
+      write_csv(full_data, paste0(path, "/", park[i], "/aquarius", "/", park[i], "_aquarius_data.csv"))
       
-      unlink(file.path(getwd(), "data/all/aquarius/temp/"), recursive = T)
+      unlink(file.path(getwd(), paste0(path, "/", park[i], "/aquarius", "/temp/")), recursive = T)
       
-      print(paste0(park, "Aquarius data downloaded."))
+      print(paste0(park[i], "'s Aquarius data downloaded."))
     }
   }
   
-  full_data <- bind_rows(full_data)
+  final_data <- bind_rows(full_data)
   
-  return(full_data)
+  return(final_data)
   
 }
