@@ -39,5 +39,5 @@ source)
 
 
 
-# set noaa key
-noaa_key <-  "VAOckuKZRAFPIOuippCpMBAUPTiAtVMn"
+# set noaa key (don't think this is needed anymore)
+#noaa_key <-  "VAOckuKZRAFPIOuippCpMBAUPTiAtVMn"

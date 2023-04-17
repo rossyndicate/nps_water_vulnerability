@@ -8,8 +8,6 @@
 #' @param path If `save = TRUE`, the file path to save the shapefile
 #' 
 #' @return A spatial sf object for each specified park boundary
-#' 
-#' @seealso [pullDataStore()]
 getParkBoundary <- function(park, save = FALSE, path = NULL){
   
   call <- "https://irmaservices.nps.gov/datastore/v4/rest"
@@ -48,7 +46,7 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
       }
       
       # save park boundary in park folder
-      sf::st_write(filter(park_boundary, UNIT_CODE == park[i]), 
+      sf::write_sf(filter(park_boundary, UNIT_CODE == park[i]), 
                    paste0(path, park[i], "/park_boundary_", park[i], ".shp"))
       
       
