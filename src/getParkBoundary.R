@@ -33,7 +33,7 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   
   parks <- sf::st_read(paste0(temp2, "/Administrative_Boundaries_of_National Park_System_Units.gdb"))
   
-  poi <- parks %>% 
+  park_boundary <- parks %>% 
     dplyr::filter(UNIT_CODE %in% park) %>%
     dplyr::group_by(UNIT_CODE,REGION,STATE) %>%
     dplyr::summarize()
@@ -50,7 +50,7 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
       
       # save park boundary in park folder
       sf::write_sf(filter(park_boundary, UNIT_CODE == park[i]), 
-                   paste0(path, park[i], "/park_boundary_", park[i], ".shp"))
+                   paste0(path, "/", park[i], "/", park[i], "_park_boundary.shp"))
       
       
     }
@@ -59,6 +59,6 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
     
   }
   
-  return(poi)
+  return(park_boundary)
   
 }
