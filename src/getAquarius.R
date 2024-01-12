@@ -7,10 +7,9 @@
 #' @param park The 4 digit national park code(s) for parks of interest
 #' 
 #' @return A dataset containing tidied Aquarius data
-getAquarius <- function(park, path = "data/all/", system = "Mac"){
+getAquarius <- function(park, path = "data/park/", system = "Mac"){
   
   #park = "SHEN"
-  #path = "data/all/aquarius/"
   #system = "Mac"
   
 full_data <- vector("list", length = length(park))
@@ -38,9 +37,9 @@ full_data <- vector("list", length = length(park))
                                                 browser.helperApps.neverAsk.openFile = "text/csv",
                                                 browser.helperApps.neverAsk.saveToDisk = "text/csv"))
     
-    exCap <- list(firefox_profile = fprof$firefox_profile, 
+    exCap <- list(firefox_profile = fprof$firefox_profile)
                   # REMOVE  "Pop-up" CONSOLE:
-                  "moz:firefoxOptions" = list(args = list('--headless')))
+                  #"moz:firefoxOptions" = list(args = list('--headless')))
     
     # start up RSelenium session:
     rD <- RSelenium::rsDriver(browser = "firefox", port = sample.int(1000, 1), extraCapabilities = exCap)
@@ -72,7 +71,7 @@ full_data <- vector("list", length = length(park))
     # Create empty tibble for storing for loop data into if not sites exist for a park. 
     if(nrow(sites) == 0){
       
-      full_data[[i]] <- tibble(c("timestamp","siteID","parameter","val","units","UNIT_CODE","Long","Lat","EPSG","Location.Type"),
+      full_data <- tibble(c("timestamp","siteID","parameter","val","units","UNIT_CODE","Long","Lat","EPSG","Location.Type"),
                                c( NA, NA, NA, NA, NA, NA, NA, NA, NA, NA))
       
       print(paste0(park, " does not have any Aquarius data."))
@@ -231,9 +230,9 @@ full_data <- vector("list", length = length(park))
         dplyr::left_join(.,coords, by = c("siteID" = "site")) %>%
         dplyr::left_join(.,dplyr::select(sites, c(Identifier, Location.Type)), by = c("siteID" = "Identifier"))
       
-      write_csv(full_data, paste0(path, "/", park[i], "/aquarius", "/", park[i], "_aquarius_data.csv"))
+      write_csv(full_data[[i]], paste0(path, "/", park[i], "/", park[i], "_aquarius_data.csv"))
       
-      unlink(file.path(getwd(), paste0(path, "/", park[i], "/aquarius", "/temp/")), recursive = T)
+      unlink(file.path(getwd(), paste0(path, "/", park[i], "/aquarius/")), recursive = T)
       
       print(paste0(park[i], "'s Aquarius data downloaded."))
     }

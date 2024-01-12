@@ -16,6 +16,7 @@ getSNOTEL <-
            timeseries = "Daily",
            save = FALSE,
            path = NULL) {
+    
     sf::sf_use_s2(FALSE)
     
     # add buffer around area of interest
@@ -72,7 +73,7 @@ getSNOTEL <-
     
     
     if (save == TRUE) {
-      write_sf(final_data, path)
+      st_write(final_data, paste0(path, "/SNOTEL.shp"), append = FALSE)
       
     }
     
