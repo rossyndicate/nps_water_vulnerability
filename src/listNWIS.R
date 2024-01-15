@@ -5,7 +5,7 @@
 #' @param aoi An sf polygon object, often a park boundary (or boundaries) retrieved from `getParkBoundary()`.
 #' @param dist The distance (in the same units used by `getParkBoundary()`) to buffer around park boundary
 #' @return An sf object of USGS gaging stations within given spatial boundary and attributes
-inventoryNWIS <- function(aoi, dist){
+listNWIS <- function(aoi, dist){
   
   sf::sf_use_s2(FALSE)
   

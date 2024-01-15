@@ -16,17 +16,16 @@ getNOAA <-
            startDate = "first",
            endDate = Sys.Date(),
            #noaa_key,
+           variables = "all",
            save = FALSE,
            path = NULL) {
-    
-    
     
     # if (is.null(noaa_key)) {
     #   print("Must supply your NOAA key")
     #   stop()
     # }
     
-
+    
     #options(noaakey = noaa_key)
     
     sf::sf_use_s2(FALSE)
@@ -41,8 +40,10 @@ getNOAA <-
     station_aoi <- all %>%
       sf::st_transform(st_crs(aoi)) %>%
       sf::st_filter(aoi) %>%
-      dplyr::distinct(id, .keep_all = TRUE) %>%
-      sf::st_join(aoi)
+      dplyr::group_by(id, elevation, name, geometry, first_year) %>%
+      dplyr::summarize() %>%
+      sf::st_join(aoi) %>%
+      distinct(.keep_all = TRUE)
     
     
     # if startDate = 'first', find min year in the station metadata
@@ -50,41 +51,34 @@ getNOAA <-
       startDate <- paste(min(station_aoi$first_year), "01", "01", sep = "-")
     }
     
+    station_aoi <- station_aoi %>%
+      dplyr::group_by(id, elevation, name, geometry) %>%
+      dplyr::summarize() %>%
+      distinct(.keep_all = TRUE)
+    
     #get weather data for all stations (depending on dates and how many stations this can take a while)
     weather_data <- rnoaa::meteo_pull_monitors(station_aoi$id, date_min = startDate,
-                                                           date_max = endDate)
- 
+                                               date_max = endDate,
+                                               var = variables)
+    
     
     #tie back to coordinates
     final_data <- weather_data %>%
-      dplyr::left_join(station_aoi, by = "id") %>%
+      left_join(., station_aoi, by = "id") %>%
       sf::st_as_sf() #add argument on whether to return sf or tibble?
-
     
     if (save == TRUE) {
       
-      # retrieve unique park names
-      parks <- unique(aoi$UNIT_CODE)
-      
-      for (i in 1:length(parks)){
-        
-        #create park folder if does not already exist in 'path'
-        if (!dir.exists(paste0(path, park[i]))) {
-          
-          dir.create(paste0(path, park[i]))
-        }
-        
         # save park boundary in park folder
-        sf::write_sf(filter(final_data, UNIT_CODE == parks[i]), 
-                     paste0(path, parks[i], "/noaa_", parks[i], ".shp"))
+        sf::st_write(final_data,
+                     paste0(path, "/", park, "_noaa.shp"),
+                     append = FALSE
+                     )
         
         
       }
       
-      print(paste("NOAA data for specified dates saved to respective NPS park folders in:", paste0(getwd(), "/", path)))
-      
-      
-    }
+      print(paste("NOAA data for specified dates saved to respective NPS park folder in:", paste0(getwd(), "/", path)))
     
     return(final_data)
     

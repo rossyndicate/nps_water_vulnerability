@@ -1,8 +1,5 @@
 # setup script for processing functions
 
-
-
-
 #Install (if necessary) and load all required packages
 
 packageLoad <-
@@ -15,29 +12,35 @@ packageLoad <-
     }
   }
 
-
 # vector of packages to load
 packages <- c('tidyverse',
               'sf',
               'httr',
               'jsonlite',
               'nhdplusTools',
-              'rnoaa')
+              'rnoaa',
+              "mapview",
+              "ggpubr",
+              "kableExtra",
+              "plotly",
+              "DT",
+              "igraph",
+              "nngeo",
+              #"USAboundaries",
+              "tigris")
 
 
 packageLoad(packages)
-
 
 # source all functions
 
 purrr::map(list.files(
   path = "src/",
   pattern = "*.R",
-  full.names = TRUE
+  full.names = TRUE,
+  recursive = TRUE
 ),
 source)
-
-
 
 # set noaa key (don't think this is needed anymore)
 #noaa_key <-  "VAOckuKZRAFPIOuippCpMBAUPTiAtVMn"

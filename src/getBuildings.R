@@ -2,7 +2,7 @@
 #' 
 #' https://public-nps.opendata.arcgis.com/datasets/nps::nps-buildings-web-mercator/explore?location=21.734632%2C-117.659450%2C4.08
 
-getBuildings <- function(aoi, dist=0, save=FALSE, path){
+getBuildings <- function(aoi, dist=0){
   
   #install.packages("arcgisbinding", repos="https://r.esri.com", type="win.binary")
   call <- "https://opendata.arcgis.com/api/v3/datasets/2bf22e15d269431e9e3380382c0a1546_2/downloads/data?format=shp&spatialRefId=3857&where=1%3D1"
