@@ -1,6 +1,6 @@
 # setup script for processing functions
 
-#Install (if necessary) and load all required packages
+#Install (if necessary) and load all required packages ----------------
 
 packageLoad <-
   function(x) {
@@ -15,6 +15,7 @@ packageLoad <-
 # vector of packages to load
 packages <- c('tidyverse',
               'sf',
+              'terra',
               'httr',
               'jsonlite',
               'nhdplusTools',
@@ -27,12 +28,29 @@ packages <- c('tidyverse',
               "igraph",
               "nngeo",
               #"USAboundaries",
-              "tigris")
+              "tigris",
+              "remotes",
+              'devtools')
 
 
 packageLoad(packages)
 
-# source all functions
+## GitHub package installs ----------------
+
+# suggested install of github version for climateR
+# remotes::install_github("mikejohnson51/AOI") # suggested! But I don't think we need it..
+if (!"climateR" %in% installed.packages()) {
+  remotes::install_github("mikejohnson51/climateR")
+}
+library(climateR)
+
+
+if (!"cft" %in% installed.packages()) {
+  devtools::install_github("earthlab/cft")
+}
+library(cft)
+
+# source all functions --------------------------
 
 purrr::map(list.files(
   path = "src/",
