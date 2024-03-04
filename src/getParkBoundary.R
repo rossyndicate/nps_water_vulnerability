@@ -31,7 +31,7 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   
   #sf::sf_use_s2(FALSE)
   
-  parks <- sf::st_read(paste0(temp2, "/Administrative_Boundaries_of_National Park_System_Units.gdb"))
+  parks <- sf::st_read(paste0(temp2, "/Administrative_Boundaries_of_National Park_System_Units.gdb"), quiet = TRUE)
   
   park_boundary <- parks %>% 
     dplyr::filter(UNIT_CODE %in% park) %>%

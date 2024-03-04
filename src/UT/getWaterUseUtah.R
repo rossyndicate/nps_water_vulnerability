@@ -16,9 +16,8 @@ for(i in 1:length(tables)){
 }
 
 tables_tes <- tables_nes %>%
-  vctrs::list_drop_empty() #%>%
+  vctrs::list_drop_empty() %>%
   purrr::keep(., ~ncol(.x) == 15)
-
 
 return(tables_tes)
 
