@@ -30,7 +30,9 @@ packages <- c('tidyverse',
               #"USAboundaries",
               "tigris",
               "remotes",
-              'devtools')
+              'devtools',
+              'ggfortify',
+              'ggrepel')
 
 
 packageLoad(packages)
