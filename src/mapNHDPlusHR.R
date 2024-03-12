@@ -6,7 +6,7 @@ mapNHDPlusHR <- function(aoi){
   
   for(i in 1:nrow(hucs)){
     
-    nhdhr <- paste0('data/nhdplushr/', str_sub(hucs$huc4[i], 1, 2), "/")
+    nhdhr <- paste0('data/all/nhdplushr/', str_sub(hucs$huc4[i], 1, 2), "/")
     
     file <- list.files(nhdhr, pattern = paste0(hucs$huc4[i], "_HU4_GDB.gdb"), full.names = TRUE)
     
