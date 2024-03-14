@@ -26,8 +26,11 @@ packages <- c('tidyverse',
               "DT",
               "igraph",
               "nngeo",
-              #"USAboundaries",
-              "tigris")
+              "dataRetrieval",
+              "tigris",
+              "data.table",
+              "terra",
+              "stars")
 
 
 packageLoad(packages)
