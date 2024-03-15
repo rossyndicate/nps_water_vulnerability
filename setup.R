@@ -35,6 +35,8 @@ packages <- c('tidyverse',
               'devtools',
               'ggfortify',
               'ggrepel')
+              "stars")
+
 
 
 packageLoad(packages)
