@@ -6,7 +6,7 @@ getXYWatersheds <- function(sf = NULL, coordinates = c(-112.2124, 37.63281)){
   if(is.null(sf)){
     
     # Create a data frame with a column named 'geometry'
-    df <- tibble(long = coordinates[1],
+    df <- tibble::tibble(long = coordinates[1],
                  lat = coordinates[2])
     
     aoi <- sf::st_as_sf(df, coords = c("long", "lat"), crs = 4326)
@@ -36,21 +36,21 @@ getXYWatersheds <- function(sf = NULL, coordinates = c(-112.2124, 37.63281)){
   
   # read in the complete NHD (in tabular form) to make for much more efficient nhd crawling. 
   # This data in tabular form doesn't exist anywhere online that I know of... -_-
-  nhd <- read_csv('data/all/nhd_flow_network.csv') 
+  nhd <- readr::read_csv('data/all/nhd_flow_network.csv') 
   
   upstream <- nhdplusTools::get_UT(nhd, aoi$comid) %>% #upstream trace function in nhdplusTools
     tibble::as_tibble() %>%
     dplyr::rename(comid_list = value)  %>%
-    distinct(comid_list, .keep_all = TRUE)
+    dplyr::distinct(comid_list, .keep_all = TRUE)
   
   nhd_catch <-  upstream$comid_list %>%
     map(~nhdplusTools::get_nhdplus(comid = .,
                                    realization='catchment',
                                    t_srs = 4269)) %>%
-    bind_rows() %>%
-    distinct(featureid,.keep_all=TRUE) %>%
-    group_by(featureid) %>%
-    summarize()
+    dplyr::bind_rows() %>%
+    dplyr::distinct(featureid,.keep_all=TRUE) %>%
+    dplyr::group_by(featureid) %>%
+    dplyr::summarize()
   
   return(nhd_catch)
 

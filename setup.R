@@ -13,7 +13,7 @@ packageLoad <-
   }
 
 # vector of packages to load
-packages <- c('tidyverse',
+packages <- c(
               'sf',
               'httr',
               'jsonlite',
@@ -35,8 +35,10 @@ packages <- c('tidyverse',
               'devtools',
               'ggfortify',
               'ggrepel',
-              "stars")
+              "stars"
+              )
 
+packages <- c(packages, "tidyverse")
 
 
 packageLoad(packages)
