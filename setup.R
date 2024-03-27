@@ -34,7 +34,7 @@ packages <- c('tidyverse',
               "remotes",
               'devtools',
               'ggfortify',
-              'ggrepel')
+              'ggrepel',
               "stars")
 
 
