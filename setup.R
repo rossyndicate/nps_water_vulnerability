@@ -36,7 +36,8 @@ packages <- c(
               'ggfortify',
               'ggrepel',
               "stars",
-              "ggforce")
+              "ggforce",
+              "janitor")
 
 
 packages <- c(packages, "tidyverse")
