@@ -30,10 +30,8 @@ getPODUtah <- function(aoi, dist = 0){
     sf::st_join(.,dplyr::select(aoi, within = UNIT_CODE), left = TRUE) %>%
     dplyr::mutate(park_right = ifelse(grepl("National Park", OWNER, ignore.case = T), "Park","Non-park"),
                   within_park = ifelse(!is.na(within), "Within Park", NA)) %>%
-    select(-within)
+    dplyr::select(-within)
   
   return(nearby_wr)
   
 }
-
-

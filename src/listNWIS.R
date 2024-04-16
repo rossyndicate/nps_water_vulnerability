@@ -61,7 +61,7 @@ listNWIS <- function(aoi, dist){
     rvest::html_table() #%>%
   
   table <- rbind(table[[1]],table[[2]],table[[3]],table[[4]],table[[5]]) %>%
-    select(site_type_cd = 1,
+    dplyr::select(site_type_cd = 1,
            site_type = 2)
   
   inventory <- left_join(inventory,table,by='site_type_cd') %>%
