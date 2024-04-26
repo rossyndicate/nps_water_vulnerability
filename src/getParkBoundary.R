@@ -21,7 +21,7 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   #   dplyr::as_tibble() %>% 
   #   filter(str_detect(fileName, "nps_boundary")) %>% 
   #   pull(downloadLink)
-  downloadLink <- "https://irmaservices.nps.gov/datastore/v6/rest/DownloadFile/693182"
+  downloadLink <- "https://irma.nps.gov/DataStore/DownloadFile/702386"
   
   #download boundary 
   temp1 <- tempfile()
@@ -31,13 +31,13 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   
   #sf::sf_use_s2(FALSE)
   
-  parks <- sf::st_read(paste0(temp2, "/Administrative_Boundaries_of_National Park_System_Units.gdb"), quiet = TRUE)
+  parks <- sf::st_read(paste0(temp2, "/Administrative_Boundaries_of_National_Park_System_Units.gdb/Administrative_Boundaries_of_National_Park_System_Units.gdb"), quiet = TRUE)
   
   park_boundary <- parks %>% 
     dplyr::filter(UNIT_CODE %in% park) %>%
     dplyr::group_by(UNIT_CODE,REGION,STATE) %>%
-    dplyr::summarize()
-    
+    dplyr::summarize(.groups = "keep")
+  
   if(save == TRUE){
     
     for (i in 1:length(park)){
