@@ -75,7 +75,7 @@ listNWIS <- function(aoi, dist){
                                data_type_cd=="ad" ~ "USGS Annual Water Data Report",
                                data_type_cd=="aw" ~ "Active Groundwater Level Network",
                                data_type_cd=="id" ~ "Historic Instantaneous")) %>%
-    sf::st_join(., dplyr::select(aoi_buffer, UNIT_CODE))
+    sf::st_join(., dplyr::select(aoi_buffer))#, UNIT_CODE))
   
   return(inventory)
   
