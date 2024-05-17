@@ -37,7 +37,12 @@ packages <- c(
               'ggrepel',
               "stars",
               "ggforce",
-              "janitor")
+              "janitor",
+              "rvest",
+              "lwgeom",
+              "zoo",
+              "gridExtra",
+              "akima")
 
 
 packages <- c(packages, "tidyverse")
