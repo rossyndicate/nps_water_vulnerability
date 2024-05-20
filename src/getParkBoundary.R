@@ -35,7 +35,7 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   
   park_boundary <- parks %>% 
     dplyr::filter(UNIT_CODE %in% park) %>%
-    dplyr::group_by(UNIT_CODE,REGION,STATE) %>%
+    dplyr::group_by(UNIT_CODE,REGION,STATE,UNIT_NAME,PARKNAME) %>%
     dplyr::summarize(.groups = "keep")
   
   if(save == TRUE){
