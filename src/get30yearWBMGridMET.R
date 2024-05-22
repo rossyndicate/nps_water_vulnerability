@@ -62,7 +62,7 @@ get30yearWBMGridMET <- function(aoi,
     
     # read and crop raster to AOI
     wb_dat <- terra::rast(temp1) %>%
-      terra::crop(sf::st_transform(aoi, st_crs(wb_dat)))
+      terra::crop(sf::st_transform(aoi, st_crs(.)))
     
     # assign name to raster layer
     names(wb_dat) <- gsub(".*V_1_5_annual_", "", x)
