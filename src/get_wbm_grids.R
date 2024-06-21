@@ -7,6 +7,7 @@
 #' 
 #' @param park The 4 digit national park code(s) for parks of interest
 #' @param aoi An sf object to use as the crop extent
+#' @param aoi_name A character string used to name the file, often a description of the AOI pulled
 #' @param future_years A numeric vector of all future years to pull daily data for
 #' @param historic_years A numeric vector of all historic years to pull daily data for
 #' @param macas The name of the GCMs to pull future data from (ideally pulled from `select_GCMs()`)
@@ -15,7 +16,8 @@
 #' 
 #' @return A SpatRaster with a layer for each daily value of specified wbm variable
 get_wbm_grids <- function(park, 
-                          aoi, 
+                          aoi,
+                          aoi_name = "AOI",
                           future_years = 2024:2070, 
                           historic_years = 1980:2023,
                           macas, #= selected_GCMs[c(1,4),]$GCM, 
@@ -93,6 +95,8 @@ get_wbm_grids <- function(park,
       "/wbm_daily_rasters/",
       park,
       "_",
+      aoi_name,
+      "_",
       wb_var,
       "_selected_cfs_",
       future_years[1],
@@ -153,6 +157,8 @@ get_wbm_grids <- function(park,
       park,
       "/wbm_daily_rasters/",
       park,
+      "_",
+      aoi_name,
       "_",
       wb_var,
       "_historic_gridmet_",
