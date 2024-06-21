@@ -18,7 +18,7 @@ packages <- c(
               'httr',
               'jsonlite',
               'nhdplusTools',
-              'rnoaa',
+              #'rnoaa',
               "mapview",
               "ggpubr",
               "kableExtra",
