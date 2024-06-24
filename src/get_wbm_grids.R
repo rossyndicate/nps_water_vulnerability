@@ -3,7 +3,6 @@
 #' This function pulls data directly from the FUTURE and Historical THREDDS servers for a specified variable, years, and climate models at a daily timestep
 #' and crops the imported rasters to an area of interest.
 #' 
-#' See 'scratch/explore_wbm_data_pull.Rmd' for examples
 #' 
 #' @param park The 4 digit national park code(s) for parks of interest
 #' @param aoi An sf object to use as the crop extent
