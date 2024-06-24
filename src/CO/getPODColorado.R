@@ -104,7 +104,7 @@ getPODColorado <- function(aoi, dist = 0){
                streamMile = streamMile.x, 
                structureName = structureName.x) %>%
         # duplicate info columns
-        select(-c(county.x, county.y, gnisId.y, division.y, latitude, longitude, locationAccuracy.y, pm.x, pm.y, 
+        dplyr::select(-c(county.x, county.y, gnisId.y, division.y, latitude, longitude, locationAccuracy.y, pm.x, pm.y, 
                   range.y, section.y, streamMile.y, structureName.y, structureType.y, township.y, waterDistrict.y,
                   waterSource.x, waterSource.y, associatedCaseNumbers.y)) %>%
         dplyr::mutate(park_right = ifelse(grepl("National Park", associatedContacts, ignore.case = T), "Park","Non-park"))
