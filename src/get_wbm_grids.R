@@ -127,7 +127,6 @@ get_wbm_grids <- function(park,
     r <- terra::rast(call)
     
     # assign informative names to each raster
-    # assign informative names to each raster
     names(r) <- paste(wb_var, as.Date(paste0(map_dat$historic_years[x], "-", sub(".*_", "", names(r))), format = "%Y-%j"), sep = "_")
     
     
