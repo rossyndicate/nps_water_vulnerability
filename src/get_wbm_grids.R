@@ -48,17 +48,17 @@ get_wbm_grids <- function(park,
     call <- paste0(
       "/vsicurl/",
       "http://www.yellowstone.solutions/thredds/fileServer/daily_or_monthly/gcm/",
-      map_dat$rcp[1],
+      map_dat$rcp[x],
       "/",
-      map_dat$maca[1],
+      map_dat$maca[x],
       "/V_1_5_",
-      map_dat$future_years[1],
+      map_dat$future_years[x],
       "_",
-      map_dat$maca[1],
+      map_dat$maca[x],
       "_",
-      map_dat$rcp[1],
+      map_dat$rcp[x],
       "_",
-      map_dat$wb_var[1],
+      map_dat$wb_var[x],
       ".nc4"
     )
     
