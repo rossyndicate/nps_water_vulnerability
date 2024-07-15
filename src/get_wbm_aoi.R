@@ -11,12 +11,13 @@
 #' @param aoi_name A character string used to name the file, often a description of the AOI pulled
 #' @param gcm A character vector containing selected GCMs for which to download future WBM
 #' @param download A TRUE/FALSE
+#' @param path home path in which to create subfolder
 #' 
 #' @return A data.frame containing daily timeseries of the spatial mean for 
 #'          each water balance variable formatted like the 
 #'          get_centroid_wbm_data output.
 
-get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FALSE) {
+get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FALSE, path = "data/park/") {
   
   if (download == TRUE) {
     print("Downloading gridded WBM. This may take several minutes to hours...\n\n")
@@ -36,14 +37,15 @@ get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FA
         aoi_name = aoi_name,
         aoi = aoi,
         wb_var = .x,
-        macas = gcms
+        macas = gcms,
+        path = path
       )
     )
     
     print("Download complete!\n\n")
   }
   
-  wbm_ws_dir <- paste0("data/park/",park,"/wbm_daily_rasters/")
+  wbm_ws_dir <- paste0(path,park,"/wbm_daily_rasters/")
   
   rast_read <- function(rast_list) {
     
