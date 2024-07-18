@@ -36,7 +36,8 @@ getPODColorado <- function(aoi, dist = 0){
     sf::st_join(.,dplyr::select(aoi, within = UNIT_CODE), left = TRUE) %>%
     dplyr::mutate(#park_right = ifelse(grepl("National Park", OWNER, ignore.case = T), "Park","Non-park"),
       within_park = ifelse(!is.na(within), "Within Park", NA)) %>%
-    dplyr::select(-within)
+    dplyr::select(-within) %>%
+    dplyr::filter(str_detect(CurrInUse, "(U)|(A)|(F)")) # Filter for active structures only
   
   if(nrow(nearby_wr) == 0){
     print("No PODs found within the user-supplied `aoi`")
