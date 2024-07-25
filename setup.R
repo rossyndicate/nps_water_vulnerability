@@ -49,7 +49,8 @@ packages <- c(
   "tmap", 
   "maptiles",
   "flextable", 
-  "ggseas"
+  "ggseas",
+  "furrr"
   )
 
 
