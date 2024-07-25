@@ -22,7 +22,7 @@ get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FA
   if (download == TRUE) {
     print("Downloading gridded WBM. This may take several minutes to hours...\n\n")
     
-    walk(
+    furrr::future_walk(
       c(
         "soil_water",
         "runoff",
@@ -45,50 +45,56 @@ get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FA
     print("Download complete!\n\n")
   }
   
-  wbm_ws_dir <- paste0(path,park,"/wbm_daily_rasters/")
+  wbm_aoi_dir <- paste0(path,park,"/wbm_daily_rasters/")
   
   rast_read <- function(rast_list) {
     
-    rast(rast_list) %>% 
-      as.data.frame(., xy = TRUE) %>%
-      pivot_longer(-(x:y),
-                   names_to = "var",
-                   values_to = "val") %>%
+    terra::rast(rast_list) %>%
+      terra::as.data.frame(xy = TRUE) %>%
+      dtplyr::lazy_dt() %>%
+      # remove column names that have NA for the data
+      dplyr::select(-contains("_NA")) %>%
+      pivot_longer(-(x:y), names_to = "var", values_to = "val") %>%
       # Add historic to name
-      mutate(var = 
-               ifelse(
-                 grepl('^accumswe|^runoff|^rain|^PET|^AET|^soil_water|^Deficit', var),
-                 paste0("gridmet.historical_",var),var),
-             val = val / (25.4*10) ) %>% # 10 = conversion factor, 25.4 = mm to in
-      mutate(var = gsub("soil_water", "soilwater", var)) %>%
+      dplyr::mutate(var =
+                      if_else(
+                        grepl(
+                          '^accumswe|^runoff|^rain|^PET|^AET|^soil_water|^Deficit',
+                          var
+                        ),
+                        paste0("gridmet.historical_", var),
+                        var
+                      ),
+                    val = val / (25.4 * 10)) %>% # 10 = conversion factor, 25.4 = mm to in
+      dplyr::mutate(var = gsub("soil_water", "soilwater", var)) %>%
       # KEC - separate is VERY slow - can anyone suggest something quicker?
       separate(var, 
                into = c("gcm", "wbm_var", "date"), 
                sep = "_") %>%
-      mutate(wbm_var = 
-               str_replace_all(
-                 wbm_var, 
-                 c("runoff" = "runoff_in", 
-                   "rain" = "rain_in", 
-                   "AET" = "aet_in",
-                   "PET" = "pet_in",
-                   "accumswe" = "accumswe_in",
-                   "soilwater" = "soil_water_in",
-                   "Deficit" = "deficit_in")),
-             date = as.Date(date)) 
+      dplyr::mutate(wbm_var = 
+                      str_replace_all(
+                        wbm_var, 
+                        c("runoff" = "runoff_in", 
+                          "rain" = "rain_in", 
+                          "AET" = "aet_in",
+                          "PET" = "pet_in",
+                          "accumswe" = "accumswe_in",
+                          "soilwater" = "soil_water_in",
+                          "Deficit" = "deficit_in")),
+                    date = as.Date(date)) 
   }
   
   
-  ws_wbm <- list.files(wbm_ws_dir,full.names = TRUE) %>% 
+  wbm_aoi <- list.files(wbm_aoi_dir,full.names = TRUE) %>% 
             grep(aoi_name, ., value=TRUE) 
   
-  if (length(ws_wbm) < 1) {
+  if (length(wbm_aoi) < 1) {
     
     stop("Must download wbm files first! Try function argument: download = TRUE.")
   
     } else {
     
-    ws_wbm <- ws_wbm %>%
+    wbm_aoi <- wbm_aoi %>%
     purrr::map_dfr(~ rast_read(.)) %>%
     dplyr::select(-c(x,y)) %>%
     group_by(date, wbm_var, gcm) %>%

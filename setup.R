@@ -50,7 +50,8 @@ packages <- c(
   "maptiles",
   "flextable", 
   "ggseas",
-  "furrr"
+  "furrr",
+  "dtplyr"
   )
 
 
