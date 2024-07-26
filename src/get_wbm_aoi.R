@@ -11,13 +11,20 @@
 #' @param aoi_name A character string used to name the file, often a description of the AOI pulled
 #' @param gcm A character vector containing selected GCMs for which to download future WBM
 #' @param download A TRUE/FALSE
+#' @param aoi_average TRUE/FALSE whether to return a single daily average value for the entire aoi
 #' @param path home path in which to create subfolder
 #' 
 #' @return A data.frame containing daily timeseries of the spatial mean for 
 #'          each water balance variable formatted like the 
 #'          get_centroid_wbm_data output.
 
-get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FALSE, path = "data/park/") {
+get_wbm_aoi <- function(park,
+                        aoi,
+                        aoi_name,
+                        gcm = select_cfs$GCM,
+                        download = FALSE,
+                        aoi_average = FALSE,
+                        path = "data/park/") {
   
   if (download == TRUE) {
     print("Downloading gridded WBM. This may take several minutes to hours...\n\n")
@@ -45,13 +52,16 @@ get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FA
     print("Download complete!\n\n")
   }
   
+  # set up directory with wbm rasters
   wbm_aoi_dir <- paste0(path,park,"/wbm_daily_rasters/")
   
+  # create function to clean and convert wbm rasters to data frame
   rast_read <- function(rast_list) {
     
     terra::rast(rast_list) %>%
       terra::as.data.frame(xy = TRUE) %>%
-      dtplyr::lazy_dt() %>%
+      # convert to data.table for speed
+      data.table() %>% 
       # remove column names that have NA for the data
       dplyr::select(-contains("_NA")) %>%
       pivot_longer(-(x:y), names_to = "var", values_to = "val") %>%
@@ -67,7 +77,6 @@ get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FA
                       ),
                     val = val / (25.4 * 10)) %>% # 10 = conversion factor, 25.4 = mm to in
       dplyr::mutate(var = gsub("soil_water", "soilwater", var)) %>%
-      # KEC - separate is VERY slow - can anyone suggest something quicker?
       separate(var, 
                into = c("gcm", "wbm_var", "date"), 
                sep = "_") %>%
@@ -84,27 +93,39 @@ get_wbm_aoi <- function(park, aoi, aoi_name, gcm = select_cfs$GCM, download = FA
                     date = as.Date(date)) 
   }
   
-  
+  # list all aoi wbm rasters
   wbm_aoi <- list.files(wbm_aoi_dir,full.names = TRUE) %>% 
             grep(aoi_name, ., value=TRUE) 
+  
   
   if (length(wbm_aoi) < 1) {
     
     stop("Must download wbm files first! Try function argument: download = TRUE.")
   
-    } else {
-    
-    wbm_aoi <- wbm_aoi %>%
-    purrr::map_dfr(~ rast_read(.)) %>%
-    dplyr::select(-c(x,y)) %>%
-    group_by(date, wbm_var, gcm) %>%
-    summarize_all(.funs = 
-                    list(val = ~ mean(val, na.rm = TRUE)), 
-                  .groups = "keep") %>%
-    pivot_wider(names_from = "wbm_var", values_from = "val") 
-  
-    return(ws_wbm)
-    
     }
+    
+  if(aoi_average == TRUE) {
+    
+    wbm_aoi_cleaned <- wbm_aoi %>%
+      furrr::future_map_dfr(~ rast_read(.)) %>%
+      dplyr::select(-c(x,y)) %>%
+      group_by(date, wbm_var, gcm) %>%
+      summarize_all(.funs = 
+                      list(val = ~ mean(val, na.rm = TRUE)), 
+                    .groups = "keep") %>%
+      pivot_wider(names_from = "wbm_var", values_from = "val") %>% 
+      ungroup()
+    
+  } else {
+    
+    wbm_aoi_cleaned <- wbm_aoi %>%
+      furrr::future_map_dfr(~ rast_read(.))
+    
+  }
+  
+  
+    return(wbm_aoi_cleaned)
+    
+    
   
 }
