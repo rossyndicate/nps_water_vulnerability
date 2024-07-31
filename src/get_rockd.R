@@ -5,8 +5,7 @@
 #' @return An `sf` object of Macrostrat (https://macrostrat.org/) geologic layers that intersect the point object(s). 
 
 get_rockd <- function(points){
-  
-  points <- source_table_locs
+
   
   # Transform points to 4326 if not already 4326, then 
   # grab the coordinates for later steps:
