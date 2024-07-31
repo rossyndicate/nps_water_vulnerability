@@ -6,6 +6,8 @@
 
 get_rockd <- function(points){
   
+  points <- source_table_locs
+  
   # Transform points to 4326 if not already 4326, then 
   # grab the coordinates for later steps:
   if(st_crs(points)$epsg != 4326) {
@@ -35,8 +37,8 @@ get_rockd <- function(points){
                               "&adjacents=true&format=geojson_bare"),#geologic_units/map?strat_name_id=2683&format=geojson_bare",
                        .opts = RCurl::curlOptions(ssl.verifypeer=FALSE, verbose=TRUE))
     
-    sf_temp[[i]] <- geojsonsf::geojson_wkt(y)%>%
-      dplyr::mutate(aoi$rowid)
+    sf_temp[[i]] <- geojsonsf::geojson_wkt(y) %>%
+      dplyr::mutate(aoi$rowid[i])
   }
   
   sf_temp <- sf_temp %>% dplyr::bind_rows() %>%
