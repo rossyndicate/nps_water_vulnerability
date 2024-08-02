@@ -6,7 +6,7 @@
 
 get_rockd <- function(points){
 
-  
+  #https://macrostrat.org/api/v2/geologic_units/map?lat=38.7806&lng=-109.5936&adjacents=true&format=geojson_bare
   # Transform points to 4326 if not already 4326, then 
   # grab the coordinates for later steps:
   if(st_crs(points)$epsg != 4326) {
