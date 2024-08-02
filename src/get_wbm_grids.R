@@ -22,8 +22,8 @@ get_wbm_grids <- function(park,
                           macas, #= selected_GCMs[c(1,4),]$GCM, 
                           wb_var, #= "runoff", 
                           path = "data/park/") {
-  start <- Sys.time()
-  # check that path to save files to exists
+
+    # check that path to save files to exists
   if (!dir.exists(paste0(getwd(), "/", path, "/", park))) {
     dir.create(file.path(paste0(
       getwd(), "/", path, "/", park
@@ -44,7 +44,7 @@ get_wbm_grids <- function(park,
   aoi <- st_transform(aoi, crs = "+proj=lcc +lat_0=42.5 +lon_0=-100 +lat_1=25 +lat_2=60 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs")
   
   # download each raster file to temp directory
-  future_rasters <- map(1:nrow(map_dat), function(x) {
+  future_rasters <- furrr::future_map(1:nrow(map_dat), function(x) {
     call <- paste0(
       "/vsicurl/",
       "http://www.yellowstone.solutions/thredds/fileServer/daily_or_monthly/gcm/",
@@ -113,7 +113,7 @@ get_wbm_grids <- function(park,
   aoi <- st_transform(aoi, crs = "+proj=lcc +lat_0=42.5 +lon_0=-100 +lat_1=25 +lat_2=60 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs")
   
   # download each raster file to temp directory
-  historic_rasters <- map(1:nrow(map_dat), function(x) {
+  historic_rasters <- furrr::future_map(1:nrow(map_dat), function(x) {
     call <- paste0(
       "/vsicurl/",
       "http://www.yellowstone.solutions/thredds/fileServer/daily_or_monthly/v2_historical/gridmet_v_1_5_historical/V_1_5_",
@@ -168,10 +168,7 @@ get_wbm_grids <- function(park,
     overwrite = TRUE
   )
   
-  end <- Sys.time()
-  
-  end - start
-  
+
   return(list("future" = final_future_stack, "historic" = final_historic_stack))
   
 }
