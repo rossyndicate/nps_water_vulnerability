@@ -66,7 +66,8 @@ get_climate_historic <- function(sf,
                     tmax_C = tmmx - 273.15,
                     tmin_C = tmmn - 273.15,
                     tmean_C = (tmax_C + tmin_C)/2,
-                    join_index = aoi$join_index)
+                    join_index = aoi$join_index) %>%
+      dplyr::select(-c("tmmx", "tmmn", "pr"))
     
   }
   
