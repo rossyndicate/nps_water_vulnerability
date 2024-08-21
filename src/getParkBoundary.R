@@ -34,6 +34,7 @@ getParkBoundary <- function(park, save = FALSE, path = NULL){
   parks <- sf::st_read(paste0(temp2, "/Administrative_Boundaries_of_National_Park_System_Units.gdb/Administrative_Boundaries_of_National_Park_System_Units.gdb"), quiet = TRUE)
   
   park_boundary <- parks %>% 
+    sf::st_make_valid() %>%
     dplyr::filter(UNIT_CODE %in% park) %>%
     dplyr::group_by(UNIT_CODE,REGION,STATE,UNIT_NAME,PARKNAME) %>%
     dplyr::summarize(.groups = "keep")
