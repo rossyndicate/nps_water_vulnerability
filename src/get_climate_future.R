@@ -8,8 +8,8 @@
 #'
 get_climate_future <- function(sf,
                                  col_name,
-                                 start = "1979-01-01",
-                                 end = "2023-12-31",
+                                 start = "2023-01-01",
+                                 end = "2070-01-01",
                                  vars = c("tasmax", "tasmin", "pr"),
                                  GCM = select_cfs$GCM) {
   
