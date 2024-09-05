@@ -17,9 +17,8 @@
 #'         sf geometry and metadata for source area    
 get_aoi_source <- function(sf = source_table_locs) {
   
-  
   # for testing
-  # sf <- source_table_locs
+  #sf <- source_table_locs
   
   sf_crs <- st_crs(sf)
   
@@ -48,7 +47,7 @@ get_aoi_source <- function(sf = source_table_locs) {
   # Populate each row with aoi
   for(i in 1:nrow(sf)) {
     
-    #i <- 2
+    #i <- 1
     
     # Shallow method - get watershed
     if (sf[i,"method"][["method"]] == "SHALLOW METHOD") {
@@ -155,5 +154,36 @@ get_aoi_source <- function(sf = source_table_locs) {
   #sf['aoi'] <- aoi
   
   return(sf)
+  
+}
+
+
+#' Get formation info - used in get_aoi_source()
+#' This function pulls geologic layers from the Macrostrat API that intersect 
+#' a user-specified point (or points) of interest. 
+#' 
+#' @param points An `sf` object of points.
+#' 
+#' @return An `sf` object of Macrostrat (https://macrostrat.org/) geologic 
+#' layers that intersect the point object(s). 
+
+get_formation_info <- function(formation_name, rock_type){
+  
+  # grab geologic layers that intersect the coordinates of the points of interest
+  # y <- RCurl::getURL(paste0("https://macrostrat.org/api/units?strat_name=",formation_name,"&format=json"),
+  #                   .opts = RCurl::curlOptions(ssl.verifypeer=FALSE, verbose=TRUE)) %>%
+  #  fromJSON()
+  
+  #table_result <- y$success$data
+  
+  #https://macrostrat.org/api/units?strat_name=cedar_mesa
+  table_result <- RCurl::getURL(paste0("https://macrostrat.org/api/units?strat_name=",formation_name,"&format=geojson_bare&lith_group=",rock_type,"s"),
+                                .opts = RCurl::curlOptions(ssl.verifypeer=FALSE, verbose=TRUE)) %>% 
+    geojsonsf::geojson_wkt(.) %>% 
+    dplyr::bind_rows() %>%
+    sf::st_as_sf(., wkt = 'geometry', crs = 4326)
+  
+  
+  return(table_result)
   
 }
