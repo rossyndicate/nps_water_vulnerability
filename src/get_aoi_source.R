@@ -22,9 +22,7 @@ get_aoi_source <- function(sf = source_table_locs) {
   
   sf_crs <- st_crs(sf)
   
-  get_method_type <- function(sf) {
-    
-    sf_update <- sf %>%
+ sf <- sf %>%
       dplyr::mutate(
         method = 
           ifelse(source_type %in% c("Shallow Groundwater", "River/Stream"),
@@ -36,10 +34,6 @@ get_aoi_source <- function(sf = source_table_locs) {
                                            "Karst Aquifer and Spring"), 
                         "DEEP METHOD", 
                         "OTHER")))
-    
-  }
-  
-  sf <- get_method_type(sf = sf)
   
   # Initiate empty aoi vector
   aoi <- vector("list", nrow(sf))  
@@ -47,13 +41,13 @@ get_aoi_source <- function(sf = source_table_locs) {
   # Populate each row with aoi
   for(i in 1:nrow(sf)) {
     
-    #i <- 1
+    #i <- 2
     
     # Shallow method - get watershed
-    if (sf[i,"method"][["method"]] == "SHALLOW METHOD") {
+    if (sf[i,][["method"]] == "SHALLOW METHOD") {
       
       # First get watershed
-      ws <- sf[i,] %>% 
+      ws <- sf[i,]["geometry"] %>% 
         getXYWatersheds(sf = ., coordinates = NULL) %>%
         dplyr::summarize() %>%
         st_transform(., crs = sf_crs) %>%
@@ -61,9 +55,10 @@ get_aoi_source <- function(sf = source_table_locs) {
                       name = "Watershed") 
       aoi[[i]] <- ws
       
-      if (sf[i,"type"][["type"]] == "Well") {
+      if (sf[i,][["type"]] == "Well") {
         
-        # Then get potential aquifer (min age geologic unit)
+        # Then get formation extent- shallow so use min age geologic unit as 
+        # filter
         all_formations <- sf[i,] %>%
           get_rockd(points = .) %>%
           dplyr::filter(b_int_age == min(b_int_age)) %>%
@@ -143,12 +138,13 @@ get_aoi_source <- function(sf = source_table_locs) {
       
       select_formation <- select_formation %>%
         st_transform(., sf_crs) %>%
-        dplyr::mutate(type = "Formation")
+        dplyr::mutate(type = "Formation",
+                      area = as.numeric(st_area(geometry))/(1000*1000)) %>%
+        dplyr::filter(area < 1e4) # remove aoi > 10,000 km2
       
       aoi[[i]] <- select_formation
     }
   }
-  
   
   sf$aoi <- purrr::map(aoi, bind_rows)
   #sf['aoi'] <- aoi
@@ -177,12 +173,30 @@ get_formation_info <- function(formation_name, rock_type){
   #table_result <- y$success$data
   
   #https://macrostrat.org/api/units?strat_name=cedar_mesa
-  table_result <- RCurl::getURL(paste0("https://macrostrat.org/api/units?strat_name=",formation_name,"&format=geojson_bare&lith_group=",rock_type,"s"),
-                                .opts = RCurl::curlOptions(ssl.verifypeer=FALSE, verbose=TRUE)) %>% 
-    geojsonsf::geojson_wkt(.) %>% 
-    dplyr::bind_rows() %>%
-    sf::st_as_sf(., wkt = 'geometry', crs = 4326)
   
+  if(exists("table_result")){rm("table_result")}
+  
+  tryCatch({
+    # First try formation name search (without rock type)
+    table_result <- RCurl::getURL(paste0("https://macrostrat.org/api/units?strat_name=",formation_name,"&format=geojson_bare&s"),
+                                  .opts = RCurl::curlOptions(ssl.verifypeer=FALSE, verbose=TRUE)) %>%
+      geojsonsf::geojson_wkt(.) %>%
+      dplyr::bind_rows() %>%
+      sf::st_as_sf(., wkt = 'geometry', crs = 4326)
+    # Check if successful (no error)
+    if (!is.null(table_result)) return(table_result)
+    
+    # If first try fails, attempt with rock type (assuming error handling in case both fail)
+    table_result <- RCurl::getURL(paste0("https://macrostrat.org/api/units?strat_name=",formation_name,"&lith_group=",rock_type,"&format=geojson_bare"),
+                                  .opts = RCurl::curlOptions(ssl.verifypeer=FALSE, verbose=TRUE)) %>%
+      geojsonsf::geojson_wkt(.) %>%
+      dplyr::bind_rows() %>%
+      sf::st_as_sf(., wkt = 'geometry', crs = 4326)
+    return(table_result)
+  }, error = function(e) {
+    # do nothing
+    table_result <- NULL
+  })
   
   return(table_result)
   
