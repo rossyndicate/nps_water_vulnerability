@@ -147,7 +147,6 @@ get_aoi_source <- function(sf = source_table_locs) {
   }
   
   sf$aoi <- purrr::map(aoi, bind_rows)
-  #sf['aoi'] <- aoi
   
   return(sf)
   
