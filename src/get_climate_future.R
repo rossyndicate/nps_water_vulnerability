@@ -41,7 +41,7 @@ if(any(unique(sf::st_geometry_type(sf)) %in% c("POLYGON", "MULTIPOLYGON"))) {
       
       idx <- idx + 1
       
-      print(paste0('Downloading MACA for ', aoi$join_index, "."))
+      print(paste0('Downloading MACA ', models[j], '-', scenarios[j], ' for ', aoi$join_index, "."))
         
       clim <- climateR::getMACA(AOI = aoi, 
                               varname = vars,#,"pet","vs"),
@@ -51,7 +51,7 @@ if(any(unique(sf::st_geometry_type(sf)) %in% c("POLYGON", "MULTIPOLYGON"))) {
                               endDate = end) 
         
       # If the result is a spatraster (i.e., AOI spanned more than 1 grid cell)
-      if(is.list(clim) | inherits(clim[[1]], "SpatRaster")) {
+      if(inherits(clim[[1]], "SpatRaster")) {
         
         clim_crs <- st_crs(clim[[1]])
     
@@ -99,6 +99,8 @@ if(any(unique(sf::st_geometry_type(sf)) %in% c("POLYGON", "MULTIPOLYGON"))) {
       
       all_climate_data[[idx]] <- clim %>%
         data.table() %>%
+        # names of columns include va_mode_rcp so must rename
+        rename_with(~ str_split(.x, "_", n = 2) %>% map_chr(1)) %>%
         # since polygon grabbed a single grid, does not provide the coordinates
         # of the gridMET cell, so we fill in x and y with the coordinates
         # of the sf object:
@@ -110,7 +112,10 @@ if(any(unique(sf::st_geometry_type(sf)) %in% c("POLYGON", "MULTIPOLYGON"))) {
                       tmax_C = tasmax - 273.15,
                       tmin_C = tasmin - 273.15,
                       tmean_C = (tmax_C + tmin_C)/2,
-                      join_index = aoi$join_index) %>%
+                      join_index = aoi$join_index,
+                      GCM = models[j],
+                      RCP = scenarios[j],
+                      Ensemble = "r1i1p1") %>%
         dplyr::select(-c("tasmax","tasmin","pr"))
       
      }
@@ -148,6 +153,8 @@ if(any(unique(sf::st_geometry_type(sf)) %in% c("POLYGON", "MULTIPOLYGON"))) {
     
         all_climate_data[[idx]] <- clim %>%
           data.table() %>%
+          # names of columns include va_mode_rcp so must rename
+          rename_with(~ str_split(.x, "_", n = 2) %>% map_chr(1)) %>%
           # since point pulls from gridMET do not provide the coordinates
           # of the gridMET cell, we fill in x and y with the coordinates
           # of the sf object:
@@ -159,7 +166,10 @@ if(any(unique(sf::st_geometry_type(sf)) %in% c("POLYGON", "MULTIPOLYGON"))) {
                         tmax_C = tasmax - 273.15,
                         tmin_C = tasmin - 273.15,
                         tmean_C = (tmax_C + tmin_C)/2,
-                        join_index = aoi$join_index) %>%
+                        join_index = aoi$join_index,
+                        GCM = models[j],
+                        RCP = scenarios[j],
+                        Ensemble = "r1i1p1") %>%
           dplyr::select(-c("tasmax","tasmin","pr"))
         
       }
