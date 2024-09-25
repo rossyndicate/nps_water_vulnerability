@@ -76,10 +76,8 @@ aquifer_volume <- function(dtw_ft,
       new_aquifer_area2 <- as.numeric(st_area(new_aquifer_extent2)) * 10.764
       unavailable_volume <-
         0.5 * new_aquifer_area * (full_thickness_ft - valley_wall_elev - well_depth)
-          )
-        )
-      navailable_volume 
-      
+
+      new_aquifer_volume <- new_aquifer_volume - unavailable_volume 
     }
     
     # Calculate the water volume in the aquifer assuming a given specific yield.
