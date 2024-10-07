@@ -19,6 +19,7 @@ aquifer_volume <- function(dtw_ft,
                            aquifer_extent = alluvial_main_stem,
                            full_thickness_ft = 60,
                            well_depth = full_thickness_ft,
+                           valley_wall_elev = 30,
                            theta_deg = 10,
                            sy = 0.2) {
   
@@ -41,7 +42,7 @@ aquifer_volume <- function(dtw_ft,
     # Here, I assign the elevation change between the alluvium margin and 
     # the alluvium valley center (measured from google earth). It was 20-30
     # feet in this case, but could be changed.
-    valley_wall_elev <- 30
+    #valley_wall_elev <- 30
     
     # Calculate buffer distance for aquifer surface -- as the groundwater table
     # deepens, the effective "area" of the aquifer shrinks. This uses the approx.
