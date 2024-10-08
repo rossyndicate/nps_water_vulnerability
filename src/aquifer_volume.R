@@ -2,33 +2,37 @@
 #' assuming the aquifer takes the form of a triangular shaped prism, i.e., 
 #' an alluvial or valley aquifer. 
 #' Inputs:
+#' @param dtw_ft The depth to groundwater in feet
 #' @param aquifer_extent sf_shapefile of the aquifer extent when full 
 #' @param full_thickness_ft Thickness of the deepest part of the aquifer
-#' @param theta_deg The angle between the aquifer ground surface and the plung-
-#' ing aquifer sides   
 #' @param well_depth The default is to assume the well penetrates the aquifer,
 #' i.e., well_depth == full_thickness_ft. However, if the well is less than
 #' fully penetrating, the total depth can be added here.
-#' @param dtw_ft The depth to groundwater in feet
-#' @param the specific yield of the aquifer
+#' @param valley_wall_elev Elevation change between the valley wall and location
+#'                          of wells which DTW is measured from.
+#' @param theta_deg The angle between the aquifer ground surface and the plung-
+#' ing aquifer sides  
+#' @param sy specific yield of the aquifer
 #' 
 #' Returns:
 #' @param water_volume The volume of water in the aquifer in cubic feet
 
 aquifer_volume <- function(dtw_ft,
-                           aquifer_extent = alluvial_main_stem,
-                           full_thickness_ft = 60,
-                           well_depth = full_thickness_ft,
-                           valley_wall_elev = 30,
-                           theta_deg = 10,
-                           sy = 0.2) {
+                           aquifer_extent,
+                           full_thickness_ft,
+                           well_depth,
+                           valley_wall_elev,
+                           theta_deg,
+                           sy) {
   
   # Test inputs
   #aquifer_extent <- marine
-  #full_thickness_ft <- 30 # ft
+  #full_thickness_ft <- 60 # ft
   #theta_deg <- 10 # degrees
-  #dtw_ft <- 10
-  #sy <- .2
+  #dtw_ft <- 10 # gw depth
+  #sy <- .2 # unitless
+  # well_depth <- 30 #ft approx depth of screened interval
+  # valley_wall_elev <- 30 #ft from DEM
   
   if(is.na(dtw_ft)) {
     return(NA)
@@ -67,7 +71,7 @@ aquifer_volume <- function(dtw_ft,
     new_aquifer_volume <- 
       0.5 * new_aquifer_area * (full_thickness_ft - valley_wall_elev - dtw_ft)
     
-    if (well_depth < full_thickness_ft) {
+    if (well_depth < (full_thickness_ft - valley_wall_elev)) {
       buffer_length_2 <- (well_depth + valley_wall_elev)/tan(theta_deg*pi/180)
       new_aquifer_extent2 <-
         suppressMessages(
