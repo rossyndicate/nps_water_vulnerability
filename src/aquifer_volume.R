@@ -2,28 +2,37 @@
 #' assuming the aquifer takes the form of a triangular shaped prism, i.e., 
 #' an alluvial or valley aquifer. 
 #' Inputs:
+#' @param dtw_ft The depth to groundwater in feet
 #' @param aquifer_extent sf_shapefile of the aquifer extent when full 
 #' @param full_thickness_ft Thickness of the deepest part of the aquifer
+#' @param well_depth The default is to assume the well penetrates the aquifer,
+#' i.e., well_depth == full_thickness_ft. However, if the well is less than
+#' fully penetrating, the total depth can be added here.
+#' @param valley_wall_elev Elevation change between the valley wall and location
+#'                          of wells which DTW is measured from.
 #' @param theta_deg The angle between the aquifer ground surface and the plung-
-#' ing aquifer sides   
-#' @param dtw_ft The depth to groundwater in feet
-#' @param the specific yield of the aquifer
+#' ing aquifer sides  
+#' @param sy specific yield of the aquifer
 #' 
 #' Returns:
 #' @param water_volume The volume of water in the aquifer in cubic feet
 
 aquifer_volume <- function(dtw_ft,
-                           aquifer_extent = alluvial_main_stem,
-                           full_thickness_ft = 60,
-                           theta_deg = 10,
-                           sy = 0.2) {
+                           aquifer_extent,
+                           full_thickness_ft,
+                           well_depth,
+                           valley_wall_elev,
+                           theta_deg,
+                           sy) {
   
   # Test inputs
-  # aquifer_extent <- alluvial_main_stem
-  #full_thickness_ft <- 30 # ft
-  # theta_deg <- 10 # degrees
-  # dtw_ft <- 10
-  # sy <- .2
+  #aquifer_extent <- marine
+  #full_thickness_ft <- 60 # ft
+  #theta_deg <- 10 # degrees
+  #dtw_ft <- 10 # gw depth
+  #sy <- .2 # unitless
+  # well_depth <- 30 #ft approx depth of screened interval
+  # valley_wall_elev <- 30 #ft from DEM
   
   if(is.na(dtw_ft)) {
     return(NA)
@@ -33,11 +42,17 @@ aquifer_volume <- function(dtw_ft,
                           # it should be positive. Check this if applied
                           # anywhere other than BRCA
     
+    # The valley surface slopes down (perpendicular to the EC drainage). 
+    # Here, I assign the elevation change between the alluvium margin and 
+    # the alluvium valley center (measured from google earth). It was 20-30
+    # feet in this case, but could be changed.
+    #valley_wall_elev <- 30
+    
     # Calculate buffer distance for aquifer surface -- as the groundwater table
     # deepens, the effective "area" of the aquifer shrinks. This uses the approx.
     # valley angle reported by Marine (1962) to calculate the effective decrease
     # in aquifer width for a change in groundwater depth.
-    buffer_length <- dtw_ft/tan(theta_deg*pi/180) 
+    buffer_length <- (dtw_ft + valley_wall_elev)/tan(theta_deg*pi/180) 
     
     # Use that buffer distance to remove buffer distance from the original
     # aquifer extent.
@@ -54,7 +69,21 @@ aquifer_volume <- function(dtw_ft,
     # Calculate the total "solid" volume of the new aquifer assuming a 
     # triangular prism.
     new_aquifer_volume <- 
-      0.5 * new_aquifer_area * (full_thickness_ft - dtw_ft)
+      0.5 * new_aquifer_area * (full_thickness_ft - valley_wall_elev - dtw_ft)
+    
+    if (well_depth < (full_thickness_ft - valley_wall_elev)) {
+      buffer_length_2 <- (well_depth + valley_wall_elev)/tan(theta_deg*pi/180)
+      new_aquifer_extent2 <-
+        suppressMessages(
+          suppressWarnings(
+            st_buffer(aquifer_extent,
+                      buffer_length2/-366002.44)))
+      new_aquifer_area2 <- as.numeric(st_area(new_aquifer_extent2)) * 10.764
+      unavailable_volume <-
+        0.5 * new_aquifer_area * (full_thickness_ft - valley_wall_elev - well_depth)
+
+      new_aquifer_volume <- new_aquifer_volume - unavailable_volume 
+    }
     
     # Calculate the water volume in the aquifer assuming a given specific yield.
     water_volume <- 
